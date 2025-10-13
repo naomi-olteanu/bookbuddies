@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "37870052659",
+    "project_id": "bookbuddies-2025",
+    "storage_bucket": "bookbuddies-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:37870052659:android:e7d1cfed554a71e6788a46",
+        "android_client_info": {
+          "package_name": "com.example.bookbuddies"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9r3SKCVI4xMjFQ2a_RcK5U28bKd1ZPag"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
