@@ -1,3 +1,4 @@
+import 'package:bookbuddies/theme/theme_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:bookbuddies/pages/add_book_page.dart';
 import 'package:bookbuddies/pages/all_books_page.dart';
@@ -38,9 +39,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -50,13 +49,26 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          // Theme toggle
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: ThemeController.themeMode,
+            builder: (context, mode, _) {
+              return IconButton(
+                tooltip: 'Toggle theme',
+                icon: Icon(
+                  mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
+                ),
+                onPressed: ThemeController.toggleTheme,
+              );
+            },
+          ),
+
+          const SizedBox(width: 8),
           TextButton.icon(
             onPressed: _auth.logout,
             icon: const Icon(Icons.logout),
             label: const Text('Logout'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.accent,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.accent),
           ),
           const SizedBox(width: 12),
         ],
@@ -157,10 +169,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(color: AppColors.textMuted),
-          ),
+          Text(label, style: const TextStyle(color: AppColors.textMuted)),
         ],
       ),
     );
@@ -271,10 +280,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: const TextStyle(color: AppColors.textMuted),
-            ),
+            Text(subtitle, style: const TextStyle(color: AppColors.textMuted)),
           ],
         ),
       ),
