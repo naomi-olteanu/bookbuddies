@@ -41,4 +41,8 @@ class BookService {
       await doc.delete();
     }
   }
+
+  Future<void> updateBook(Book book) async {
+    await books.doc(book.id).update(book.toMap());
+  }
 }

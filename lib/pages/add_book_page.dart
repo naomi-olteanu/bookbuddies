@@ -1,14 +1,19 @@
+import 'dart:io';
+import 'package:bookbuddies/app_layout/main_layout.dart';
+import 'package:bookbuddies/theme/app_theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:bookbuddies/services/google_books_service.dart';
 import '../services/auth_service.dart';
 import '../services/book_service.dart';
 import '../models/book_model.dart';
-import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class AddBookPage extends StatefulWidget {
-  const AddBookPage({super.key});
+  final Book? bookToEdit; // 🆕 Optional parameter for editing
+
+  const AddBookPage({super.key, this.bookToEdit});
 
   @override
   State<AddBookPage> createState() => _AddBookPageState();
@@ -20,138 +25,43 @@ class _AddBookPageState extends State<AddBookPage> {
   final _googleBooksService = GoogleBooksService();
 
   // Controllers
-  final titleController = TextEditingController();
-  final authorsController = TextEditingController();
-  final descriptionController = TextEditingController();
-  final languageController = TextEditingController(text: 'en');
-  final editionController = TextEditingController();
+  late TextEditingController titleController;
+  late TextEditingController authorsController;
+  late TextEditingController descriptionController;
+  late TextEditingController languageController;
+  late TextEditingController editionController;
   final googleSearchController = TextEditingController();
 
-  // Google Books state
+  // State
   List<GoogleBookResult> searchResults = [];
   GoogleBookResult? selectedGoogleBook;
   bool manualMode = false;
-
-  // Condition
   BookCondition selectedCondition = BookCondition.GOOD;
-
+  
   // Images
   final ImagePicker _picker = ImagePicker();
-  List<XFile> selectedImages = [];
+  List<XFile> newImages = [];       // 🆕 New photos to upload
+  List<String> existingImages = []; // 🆕 Existing URLs from Firestore
   bool isSaving = false;
 
-  Future<void> saveBook() async {
-  if (titleController.text.isEmpty ||
-      authorsController.text.isEmpty ||
-      descriptionController.text.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please fill all required fields')),
-    );
-    return;
-  }
+  @override
+  void initState() {
+    super.initState();
+    final b = widget.bookToEdit;
 
-  if (selectedImages.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please add at least one real book photo')),
-    );
-    return;
-  }
-
-  setState(() => isSaving = true);
-
-  try {
-    final user = _auth.currentUser!;
-
-    final authors = authorsController.text
-        .split(',')
-        .map((a) => a.trim())
-        .where((a) => a.isNotEmpty)
-        .toList();
-
-    final book = Book(
-      id: '',
-      title: titleController.text.trim(),
-      authors: authors,
-      description: descriptionController.text.trim(),
-      categories: selectedGoogleBook?.categories ?? const [],
-      isbn: null,
-      googleBookId: selectedGoogleBook?.id,
-      googleCoverUrl: selectedGoogleBook?.thumbnail,
-      language: languageController.text.trim(),
-      edition: editionController.text.trim(),
-      condition: selectedCondition,
-      userImages: const [],
-      ownerId: user.uid,
-      ownerName: user.email ?? '',
-      isAvailable: true,
-    );
-
-
-    final docRef = await _bookService.addBookAndReturnRef(book);
-    final imageUrls = await uploadImages(docRef.id);
-    await docRef.update({'userImages': imageUrls});
-
-    if (!mounted) return;
-
-    Navigator.pop(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Book added successfully')),
-    );
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error saving book: $e')),
-    );
-  } finally {
-    if (mounted) {
-      setState(() => isSaving = false);
+    // 🆕 Initialize controllers with existing data or defaults
+    titleController = TextEditingController(text: b?.title ?? '');
+    authorsController = TextEditingController(text: b?.authors.join(', ') ?? '');
+    descriptionController = TextEditingController(text: b?.description ?? '');
+    languageController = TextEditingController(text: b?.language ?? 'en');
+    editionController = TextEditingController(text: b?.edition ?? '');
+    
+    if (b != null) {
+      selectedCondition = b.condition;
+      existingImages = List.from(b.userImages); // Copy list
+      manualMode = true; // Default to manual mode when editing
     }
   }
-}
-
-
-  Future<void> pickImages() async {
-    if (selectedImages.length >= 5) return;
-
-    final images = await _picker.pickMultiImage();
-
-    if (images.isEmpty) return;
-
-    setState(() {
-      final remaining = 5 - selectedImages.length;
-      selectedImages.addAll(images.take(remaining));
-    });
-  }
-
-  Future<List<String>> uploadImages(String bookId) async {
-  final storage = FirebaseStorage.instance;
-  List<String> urls = [];
-
-  for (int i = 0; i < selectedImages.length; i++) {
-    try {
-      final image = selectedImages[i];
-      final ref = storage.ref('books/$bookId/photo_$i.jpg');
-
-      final data = await image.readAsBytes()
-          .timeout(const Duration(seconds: 10));
-
-      await ref.putData(data)
-          .timeout(const Duration(seconds: 30));
-
-      final url = await ref.getDownloadURL()
-          .timeout(const Duration(seconds: 10));
-
-      urls.add(url);
-    } catch (e) {
-      debugPrint('Image upload failed: $e');
-      throw Exception('Image upload failed');
-    }
-  }
-
-  return urls;
-}
-
 
   @override
   void dispose() {
@@ -164,269 +74,467 @@ class _AddBookPageState extends State<AddBookPage> {
     super.dispose();
   }
 
+  Future<void> saveBook() async {
+    if (titleController.text.isEmpty ||
+        authorsController.text.isEmpty ||
+        descriptionController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    // 🆕 Check if we have ANY images (old or new)
+    if (existingImages.isEmpty && newImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one book photo')),
+      );
+      return;
+    }
+
+    setState(() => isSaving = true);
+
+    try {
+      final user = _auth.currentUser!;
+      final authors = authorsController.text
+          .split(',')
+          .map((a) => a.trim())
+          .where((a) => a.isNotEmpty)
+          .toList();
+
+      // Determine ID: Use existing if editing, otherwise empty (let Firestore gen it)
+      final bookId = widget.bookToEdit?.id ?? '';
+
+      // 1. Upload NEW images first
+      // Note: If creating a NEW book, we need the ID first.
+      // Strategy: 
+      // - If Editing: We have ID. Upload new images.
+      // - If Creating: Create doc first, get ID, then upload.
+      
+      List<String> finalImageUrls = [...existingImages];
+
+      if (widget.bookToEdit != null) {
+         // Editing: Upload new images directly
+         final newUrls = await uploadImages(bookId);
+         finalImageUrls.addAll(newUrls);
+      }
+
+      final bookData = Book(
+        id: bookId, // Will be ignored by add() but used by update()
+        title: titleController.text.trim(),
+        authors: authors,
+        description: descriptionController.text.trim(),
+        categories: selectedGoogleBook?.categories ?? widget.bookToEdit?.categories ?? [],
+        isbn: widget.bookToEdit?.isbn,
+        googleBookId: selectedGoogleBook?.id ?? widget.bookToEdit?.googleBookId,
+        googleCoverUrl: selectedGoogleBook?.thumbnail ?? widget.bookToEdit?.googleCoverUrl,
+        language: languageController.text.trim(),
+        edition: editionController.text.trim(),
+        condition: selectedCondition,
+        userImages: finalImageUrls, // Save the combined list
+        ownerId: user.uid,
+        ownerName: user.email ?? '',
+        isAvailable: widget.bookToEdit?.isAvailable ?? true,
+      );
+
+      if (widget.bookToEdit != null) {
+        // 🆕 UPDATE EXISTING
+        await _bookService.updateBook(bookData);
+      } else {
+        // 🆕 CREATE NEW
+        final docRef = await _bookService.addBookAndReturnRef(bookData);
+        // Now we have an ID, upload images
+        final newUrls = await uploadImages(docRef.id);
+        // Update the doc with the image URLs
+        await docRef.update({'userImages': newUrls});
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context); // Go back
+      
+      // If we came from details page, popping might show stale data unless we used .then() reload
+      // But usually Flutter rebuilds if state management is good.
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.bookToEdit != null ? 'Changes saved!' : 'Book published!')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving book: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => isSaving = false);
+    }
+  }
+
+  Future<void> pickImages() async {
+    final totalImages = existingImages.length + newImages.length;
+    if (totalImages >= 5) return;
+    
+    final images = await _picker.pickMultiImage();
+    if (images.isEmpty) return;
+    
+    setState(() {
+      final remaining = 5 - totalImages;
+      newImages.addAll(images.take(remaining));
+    });
+  }
+
+  Future<List<String>> uploadImages(String bookId) async {
+    final storage = FirebaseStorage.instance;
+    List<String> urls = [];
+
+    for (int i = 0; i < newImages.length; i++) {
+      try {
+        final image = newImages[i];
+        // Use timestamp to avoid name collisions
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final ref = storage.ref('books/$bookId/photo_${timestamp}_$i.jpg');
+        
+        final data = await image.readAsBytes(); 
+        await ref.putData(data);
+        final url = await ref.getDownloadURL();
+        urls.add(url);
+      } catch (e) {
+        debugPrint('Image upload failed: $e');
+      }
+    }
+    return urls;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Add Book')),
-      body: SingleChildScrollView(
+    final isDesktop = MediaQuery.of(context).size.width > 900;
+    final isEditing = widget.bookToEdit != null;
+
+    return MainLayout(
+      title: isEditing ? 'Edit Book' : 'Add Book',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isEditing ? 'Edit Listing' : 'List a Book',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isEditing ? 'Update details or add more photos.' : 'Share your library with the world.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 32),
+
+          if (isDesktop)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 1, child: _buildImageSection(context)),
+                const SizedBox(width: 40),
+                Expanded(flex: 2, child: _buildFormSection(context, isEditing)),
+              ],
+            )
+          else
+            Column(
+              children: [
+                _buildImageSection(context),
+                const SizedBox(height: 32),
+                _buildFormSection(context, isEditing),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageSection(BuildContext context) {
+    final totalCount = existingImages.length + newImages.length;
+
+    return Card(
+      child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Book details',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              'Book Photos',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-
-            const SizedBox(height: 16),
-
-            // 🔍 GOOGLE BOOKS SEARCH
-            if (!manualMode && selectedGoogleBook == null) ...[
-              TextField(
-                controller: googleSearchController,
-                decoration: const InputDecoration(
-                  labelText: 'Search book (Google Books)',
-                  hintText: 'Start typing a title...',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.search),
-                ),
-                onChanged: (value) async {
-                  final results = await _googleBooksService.search(value);
-                  setState(() => searchResults = results);
-                },
-              ),
-
-              const SizedBox(height: 8),
-
-              if (searchResults.isNotEmpty)
-                Container(
+            const SizedBox(height: 8),
+            Text(
+              'Upload up to 5 photos.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 24),
+            
+            // Upload Button
+            if (totalCount < 5)
+              InkWell(
+                onTap: pickImages,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  height: 150,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.primary.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                      width: 1.5
+                    ), 
                   ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: searchResults.length,
-                    itemBuilder: (context, index) {
-                      final book = searchResults[index];
-                      return ListTile(
-                        leading: book.thumbnail != null
-                            ? SizedBox(
-                                width: 40,
-                                height: 60,
-                                child: const Icon(Icons.book),
-                              )
-                            : const Icon(Icons.book),
-                        title: Text(book.title),
-                        subtitle: Text(book.authors.join(', ')),
-                        onTap: () {
-                          setState(() {
-                            selectedGoogleBook = book;
-                            titleController.text = book.title;
-                            authorsController.text = book.authors.join(', ');
-                            descriptionController.text = book.description ?? '';
-                            searchResults.clear();
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ),
-
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    manualMode = true;
-                    selectedGoogleBook = null;
-                  });
-                },
-                child: const Text('Can’t find your book? Add manually'),
-              ),
-            ],
-
-            if (selectedGoogleBook != null) ...[
-              Card(
-                child: ListTile(
-                  leading: selectedGoogleBook!.thumbnail != null
-                      ? SizedBox(
-                          width: 50,
-                          height: 70,
-                          child: Image.network(
-                            selectedGoogleBook!.thumbnail!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.book),
-                          ),
-                        )
-                      : const Icon(Icons.book),
-                  title: Text(selectedGoogleBook!.title),
-                  subtitle: Text(selectedGoogleBook!.authors.join(', ')),
-                  trailing: TextButton(
-                    onPressed: () {
-                      setState(() {
-                        selectedGoogleBook = null;
-                        manualMode = false;
-                        googleSearchController.clear();
-                      });
-                    },
-                    child: const Text('Change'),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.add_a_photo, size: 40, color: AppColors.primary),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Click to upload',
+                        style: TextStyle(
+                          color: AppColors.primary, 
+                          fontWeight: FontWeight.bold
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
-
-            TextField(
-              controller: authorsController,
-              decoration: const InputDecoration(
-                labelText: 'Authors *',
-                hintText: 'Separate multiple authors with commas',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: descriptionController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Description *',
-                border: OutlineInputBorder(),
-              ),
-            ),
 
             const SizedBox(height: 24),
 
-            const Text(
-              'Additional information',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 16),
-
-            DropdownButtonFormField<BookCondition>(
-              value: selectedCondition,
-              decoration: const InputDecoration(
-                labelText: 'Condition',
-                border: OutlineInputBorder(),
-              ),
-              items: BookCondition.values.map((condition) {
-                return DropdownMenuItem(
-                  value: condition,
-                  child: Text(condition.name.replaceAll('_', ' ')),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => selectedCondition = value);
-                }
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: languageController,
-              decoration: const InputDecoration(
-                labelText: 'Language (ISO code)',
-                hintText: 'e.g. en, ro, fr',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: editionController,
-              decoration: const InputDecoration(
-                labelText: 'Edition',
-                hintText: 'e.g. 1st, 2nd, Revised',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            const SizedBox(height: 24),
-
-            const Text(
-              'Real book photos (up to 5)',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 12),
-
+            // 🆕 COMBINED IMAGE LIST (Existing + New)
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                ...selectedImages.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final image = entry.value;
-
-                  return Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          image.path,
-                          width: 100,
-                          height: 140,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: InkWell(
-                          onTap: () {
-                            setState(() => selectedImages.removeAt(index));
-                          },
-                          child: const CircleAvatar(
-                            radius: 12,
-                            backgroundColor: Colors.black54,
-                            child: Icon(
-                              Icons.close,
-                              size: 14,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                // 1. Existing Images (Network)
+                ...existingImages.asMap().entries.map((entry) {
+                  return _imageThumbnail(
+                    isNetwork: true, 
+                    path: entry.value, 
+                    onDelete: () => setState(() => existingImages.removeAt(entry.key))
                   );
                 }),
-
-                if (selectedImages.length < 5)
-                  InkWell(
-                    onTap: pickImages,
-                    child: Container(
-                      width: 100,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.add_a_photo),
-                    ),
-                  ),
+                // 2. New Images (File/Byte)
+                ...newImages.asMap().entries.map((entry) {
+                  return _imageThumbnail(
+                    isNetwork: false, 
+                    path: entry.value.path, 
+                    onDelete: () => setState(() => newImages.removeAt(entry.key))
+                  );
+                }),
               ],
-            ),
-
-            const SizedBox(height: 24),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isSaving ? null : saveBook,
-                child: isSaving
-                    ? const CircularProgressIndicator()
-                    : const Text('Add Book'),
-              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _imageThumbnail({required bool isNetwork, required String path, required VoidCallback onDelete}) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: isNetwork 
+            ? Image.network(path, width: 80, height: 110, fit: BoxFit.cover)
+            : (kIsWeb 
+                ? Image.network(path, width: 80, height: 110, fit: BoxFit.cover) // Web XFile path is a blob URL
+                : Image.file(File(path), width: 80, height: 110, fit: BoxFit.cover)),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: InkWell(
+            onTap: onDelete,
+            child: const CircleAvatar(
+              radius: 10,
+              backgroundColor: Colors.red,
+              child: Icon(Icons.close, size: 12, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormSection(BuildContext context, bool isEditing) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Hide Google Search if editing (to keep it simple)
+        if (!isEditing && !manualMode && selectedGoogleBook == null) 
+          _buildGoogleSearch(),
+
+        if (selectedGoogleBook != null) _buildSelectedBookCard(),
+        const SizedBox(height: 24),
+
+        _buildTextField('Title *', titleController, 'Book Title'),
+        const SizedBox(height: 16),
+        _buildTextField('Authors *', authorsController, 'Separate with commas'),
+        const SizedBox(height: 16),
+        _buildTextField('Description *', descriptionController, '', maxLines: 5),
+        const SizedBox(height: 16),
+
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<BookCondition>(
+                value: selectedCondition,
+                decoration: _inputDecoration('Condition'),
+                items: BookCondition.values.map((c) {
+                  return DropdownMenuItem(
+                    value: c,
+                    child: Text(c.name.replaceAll('_', ' ')),
+                  );
+                }).toList(),
+                onChanged: (val) => setState(() => selectedCondition = val!),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildTextField('Language', languageController, 'e.g. en'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildTextField('Edition', editionController, 'e.g. 1st, 2023'),
+
+        const SizedBox(height: 40),
+
+        SizedBox(
+          height: 50,
+          child: ElevatedButton(
+            onPressed: isSaving ? null : saveBook,
+            child: isSaving
+                ? const CircularProgressIndicator(color: Colors.white)
+                : Text(isEditing ? 'Save Changes' : 'Publish Book', style: const TextStyle(fontSize: 16)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ... (Include _buildGoogleSearch, _buildSelectedBookCard, _buildTextField, _inputDecoration from previous response)
+  // They are largely unchanged, just ensure they are present in the class.
+  Widget _buildGoogleSearch() {
+    return Column(
+      children: [
+        TextField(
+          controller: googleSearchController,
+          decoration: _inputDecoration('Auto-fill from Google Books')
+            .copyWith(prefixIcon: const Icon(Icons.search)),
+          onChanged: (value) async {
+            if(value.length > 2) {
+              final results = await _googleBooksService.search(value);
+              setState(() => searchResults = results);
+            }
+          },
+        ),
+        if (searchResults.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              border: Border.all(color: Colors.grey.withOpacity(0.2)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            constraints: const BoxConstraints(maxHeight: 250),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: searchResults.length,
+              separatorBuilder: (c, i) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final book = searchResults[index];
+                return ListTile(
+                  leading: book.thumbnail != null 
+                    ? Image.network(book.thumbnail!, width: 40) 
+                    : const Icon(Icons.book),
+                  title: Text(book.title, maxLines: 1),
+                  subtitle: Text(book.authors.join(', '), maxLines: 1),
+                  onTap: () {
+                    setState(() {
+                      selectedGoogleBook = book;
+                      titleController.text = book.title;
+                      authorsController.text = book.authors.join(', ');
+                      descriptionController.text = book.description ?? '';
+                      searchResults.clear();
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+        TextButton(
+          onPressed: () => setState(() => manualMode = true),
+          child: const Text('Book not found? Enter details manually'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedBookCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.secondary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          if (selectedGoogleBook!.thumbnail != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(selectedGoogleBook!.thumbnail!, width: 60),
+            ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  selectedGoogleBook!.title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                Text(selectedGoogleBook!.authors.join(', ')),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                selectedGoogleBook = null;
+                manualMode = false;
+                googleSearchController.clear();
+              });
+            },
+            child: const Text('Change'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, String hint, {int maxLines = 1}) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: _inputDecoration(label).copyWith(hintText: hint),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: Theme.of(context).cardTheme.color,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
       ),
     );
   }

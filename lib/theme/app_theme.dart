@@ -3,27 +3,36 @@ import 'package:flutter/material.dart';
 /// 🌿 Forest Reading — Light Mode Colors
 class AppColors {
   // Core palette
-  static const Color primary = Color(0xFF2F5D50);     // Forest Green
+  static const Color primary = Color(0xFF386641);     // Deep Fern Green (Solid, readable)
   static const Color secondary = Color(0xFFA3B18A);   // Sage
-  static const Color background = Color(0xFFF5F3E7);  // Warm Beige
-  static const Color card = Color(0xFFFFFFFF);        // White
-  static const Color accent = Color(0xFF8B5E34);      // Brown (Wood)
+  
+  // CHANGED: Darker beige background, softer card
+  static const Color background = Color(0xFFEBE9E1);  // "Old Paper" / Warm Sand
+  static const Color card = Color(0xFFFDFBF7);        // "Rice Paper" (Not harsh white)
+  
+  // CHANGED: Warmer brown
+  static const Color accent = Color(0xFFBC6C25);      // Earthy Bronze / Tiger Lily
 
   // Text
-  static const Color textPrimary = Color(0xFF2B2B2B);
-  static const Color textMuted = Color(0xFF6B705C);
+  static const Color textPrimary = Color(0xFF1F2421); // Charcoal Green (Softer than black)
+  static const Color textMuted = Color(0xFF606C5D);   // Muted Moss
 }
 
 /// 🌙 Forest Reading — Dark Mode Colors
 class AppDarkColors {
-  static const Color primary = Color(0xFF3A7D6C);     // Muted Forest Green
-  static const Color secondary = Color(0xFF7FA38D);   // Sage Green
-  static const Color background = Color(0xFF1E2623);  // Dark Moss
-  static const Color card = Color(0xFF27312D);        // Deep Olive
-  static const Color accent = Color(0xFFB08968);      // Warm Brown
+  // CHANGED: Lighter, brighter primary for contrast against dark
+  static const Color primary = Color(0xFF81B29A);     // Soft Eucalyptus
+  static const Color secondary = Color(0xFF588157);   // Muted Green
+  
+  // CHANGED: Moved away from "Black" to "Deep Slate Green"
+  static const Color background = Color(0xFF262B2B);  // Deep Twilight Slate
+  static const Color card = Color(0xFF353E3C);        // Elevated Slate Green
+  
+  // CHANGED: Golden/Amber accent for night mode visibility
+  static const Color accent = Color(0xFFDDA15E);      // Muted Gold / Buff
 
-  static const Color textPrimary = Color(0xFFEAEAEA); // Soft White
-  static const Color textMuted = Color(0xFFB7C1BC);   // Muted Gray-Green
+  static const Color textPrimary = Color(0xFFEAE0D5); // Almond / Bone White
+  static const Color textMuted = Color(0xFFAAB3AB);   // Silver Sage
 }
 
 class AppTheme {
@@ -37,17 +46,21 @@ class AppTheme {
       seedColor: AppColors.primary,
       primary: AppColors.primary,
       secondary: AppColors.accent,
-      surface: AppColors.background,
+      surface: AppColors.card, // Updated to match card
+      onSurface: AppColors.textPrimary,
       brightness: Brightness.light,
     ),
 
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.background, // Blends with background for a cleaner look
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
+      iconTheme: IconThemeData(color: AppColors.primary),
     ),
 
     textTheme: const TextTheme(
+      headlineLarge: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+      titleMedium: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
       bodyMedium: TextStyle(
         color: AppColors.textPrimary,
         fontSize: 16,
@@ -59,16 +72,20 @@ class AppTheme {
 
     cardTheme: CardThemeData(
       color: AppColors.card,
-      elevation: 0,
+      elevation: 0, // Flat design
+      // Add a subtle border to distinguish from the beige background
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+        side: BorderSide(color: AppColors.primary.withOpacity(0.05), width: 1),
       ),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
+        backgroundColor: AppColors.primary, // Green buttons
         foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -90,17 +107,21 @@ class AppTheme {
       seedColor: AppDarkColors.primary,
       primary: AppDarkColors.primary,
       secondary: AppDarkColors.accent,
-      surface: AppDarkColors.background,
+      surface: AppDarkColors.card,
+      onSurface: AppDarkColors.textPrimary,
       brightness: Brightness.dark,
     ),
 
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppDarkColors.card,
+      backgroundColor: AppDarkColors.background,
       foregroundColor: AppDarkColors.textPrimary,
       elevation: 0,
+      iconTheme: IconThemeData(color: AppDarkColors.primary),
     ),
 
     textTheme: const TextTheme(
+      headlineLarge: TextStyle(color: AppDarkColors.primary, fontWeight: FontWeight.bold),
+      titleMedium: TextStyle(color: AppDarkColors.textPrimary, fontWeight: FontWeight.w600),
       bodyMedium: TextStyle(
         color: AppDarkColors.textPrimary,
         fontSize: 16,
@@ -115,13 +136,16 @@ class AppTheme {
       elevation: 0,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
+        // No border needed in dark mode usually, but optional
       ),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppDarkColors.accent,
-        foregroundColor: Colors.black,
+        backgroundColor: AppDarkColors.primary, // Soft Eucalyptus buttons
+        foregroundColor: AppDarkColors.background, // Dark text on light button
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -129,7 +153,7 @@ class AppTheme {
     ),
 
     iconTheme: const IconThemeData(
-      color: AppDarkColors.secondary,
+      color: AppDarkColors.primary,
     ),
   );
 }

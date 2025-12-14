@@ -39,8 +39,7 @@ class _HomePageState extends State<HomePage> {
 
     final u = await _userService.getUser(currentUser.uid);
     final books = await _bookService.getAllAvailableBooks(); 
-    // In a real app, fetch users sorted by rating
-    final users = [u!]; 
+    final users = [u]; 
 
     if (mounted) {
       setState(() {
@@ -55,15 +54,14 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     if (isLoading || user == null) {
-      // Just a loader, no layout yet
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
-    // ✨ WRAPPED IN MAIN LAYOUT
+
     return MainLayout(
-      user: user, // Pass the user for the navbar avatar
+      user: user,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -80,15 +78,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ... (Paste your Hero, Carousel, and CTA methods here) ...
-  // Note: Copy the _buildHeroSection, _heroStat, _buildBooksCarousel, 
-  // _buildUsersCarousel, and _buildCallToAction methods from the previous code block.
-  // They remain exactly the same, but now they are just "Children" of the layout.
-  
-  // Example of one to confirm context:
+
   Widget _buildHeroSection(BuildContext context, bool isDesktop) {
-      // ... Copy code from previous response ...
-      // I will include this brief version for copy-paste ease:
       
       final textSection = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +163,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
   
-  // (Include _buildBooksCarousel, _buildUsersCarousel, _buildCallToAction from previous response)
+
     Widget _buildBooksCarousel(BuildContext context) {
     return WebCarousel<Book>(
       title: 'Trending Books',

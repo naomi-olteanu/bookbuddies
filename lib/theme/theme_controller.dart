@@ -6,6 +6,6 @@ class ThemeController {
 
   static void toggleTheme() {
     themeMode.value =
-        themeMode.value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+        themeMode.value == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
   }
 }

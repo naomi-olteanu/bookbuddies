@@ -1,3 +1,7 @@
+import 'package:bookbuddies/app_layout/main_layout.dart';
+import 'package:bookbuddies/models/user_model.dart';
+import 'package:bookbuddies/pages/add_book_page.dart';
+import 'package:bookbuddies/services/user_service.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/book_service.dart';
@@ -16,23 +20,35 @@ class MyBooksPage extends StatefulWidget {
 class _MyBooksPageState extends State<MyBooksPage> {
   final _auth = AuthService();
   final _bookService = BookService();
+  final _userService = UserService(); // Added to fetch user data for Layout
 
   List<Book> books = [];
+  AppUser? currentUser; // Added to pass to MainLayout
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    loadBooks();
+    _loadData();
   }
 
-  Future<void> loadBooks() async {
-    final userId = _auth.currentUser!.uid;
-    final result = await _bookService.getBooksByOwner(userId);
-    setState(() {
-      books = result;
-      isLoading = false;
-    });
+  Future<void> _loadData() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    // Fetch both user and books in parallel for speed
+    final results = await Future.wait([
+      _bookService.getBooksByOwner(uid),
+      _userService.getUser(uid),
+    ]);
+
+    if (mounted) {
+      setState(() {
+        books = results[0] as List<Book>;
+        currentUser = results[1] as AppUser?;
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> deletePopupBook(Book book) async {
@@ -48,6 +64,7 @@ class _MyBooksPageState extends State<MyBooksPage> {
             child: const Text('Cancel'),
           ),
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -57,66 +74,156 @@ class _MyBooksPageState extends State<MyBooksPage> {
 
     if (confirmed != true) return;
 
-    // 1. Delete images from Storage
-    final folderRef =
-        FirebaseStorage.instance.ref('books/${book.id}');
-    final items = await folderRef.listAll();
-    for (final item in items.items) {
-      await item.delete();
+    // Show loading indicator during deletion if desired, 
+    // but for now we'll just process it.
+    try {
+      // 1. Delete images from Storage
+      final folderRef = FirebaseStorage.instance.ref('books/${book.id}');
+      final items = await folderRef.listAll();
+      for (final item in items.items) {
+        await item.delete();
+      }
+
+      // 2. Delete Firestore document
+      await _bookService.deleteBook(book.id);
+
+      // 3. Refresh UI
+      if (mounted) {
+        setState(() {
+          books.removeWhere((b) => b.id == book.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Book deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting book: $e')),
+        );
+      }
     }
-
-    // 2. Delete Firestore document
-    await _bookService.deleteBook(book.id);
-
-    // 3. Refresh UI
-    setState(() {
-      books.removeWhere((b) => b.id == book.id);
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('My Books')),
-      body: books.isEmpty
-          ? const Center(child: Text('No books added yet'))
-          : Padding(
-              padding: const EdgeInsets.all(12),
-              child: GridView.builder(
-                itemCount: books.length,
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.65,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemBuilder: (context, index) {
-                  final book = books[index];
-                  return MyBookCard(
-                    book: book,
-                    onDelete: () => deletePopupBook(book),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              MyBookDetailsPage(book: book),
+    return MainLayout(
+      title: 'My Books',
+      user: currentUser, // Pass user for Avatar in AppBar
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🏷️ HEADER SECTION
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'My Bookshelf',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    },
-                  );
-                },
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Manage the books you are sharing with the community',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
+                  ),
+                ],
               ),
+              // "Add Book" Button visible on Desktop
+              if (MediaQuery.of(context).size.width > 600)
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AddBookPage()),
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add New Book'),
+                ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+
+          // 📚 BOOK GRID or EMPTY STATE
+          books.isEmpty
+              ? _buildEmptyState(context)
+              : GridView.builder(
+                  shrinkWrap: true, // Important because MainLayout scrolls
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: books.length,
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 220, // Responsive: cards max 220px wide
+                    childAspectRatio: 0.65,  // Maintain book ratio
+                    crossAxisSpacing: 24,
+                    mainAxisSpacing: 24,
+                  ),
+                  itemBuilder: (context, index) {
+                    final book = books[index];
+                    return MyBookCard(
+                      book: book,
+                      onDelete: () => deletePopupBook(book),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MyBookDetailsPage(book: book),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+        ],
+      ),
+    );
+  }
+
+  // 🕸️ EMPTY STATE WIDGET
+  Widget _buildEmptyState(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.library_books_outlined, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'Your bookshelf is empty',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add some books to start sharing with the community!',
+            style: TextStyle(color: Colors.grey[500]),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+             onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddBookPage()),
+              ),
+            child: const Text('Add Your First Book'),
+          ),
+        ],
+      ),
     );
   }
 }
-
-

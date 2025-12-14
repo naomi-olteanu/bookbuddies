@@ -1,16 +1,19 @@
+import 'package:bookbuddies/pages/community_page.dart';
+import 'package:bookbuddies/pages/home_page.dart';
 import 'package:bookbuddies/pages/profile_page.dart';
 import 'package:bookbuddies/widgets/web_footer.dart';
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../pages/all_books_page.dart';
 import '../pages/my_books_page.dart';
+import '../pages/contact_page.dart'; 
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_controller.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget child;
-  final AppUser? user; // We need this for the avatar in the App Bar
+  final AppUser? user;
   final String title;
 
   const MainLayout({
@@ -20,40 +23,54 @@ class MainLayout extends StatelessWidget {
     this.title = 'BookBuddies',
   });
 
+  void _goHome(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const HomePage()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 900;
-    final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+    
+    // ❌ REMOVED: final GlobalKey<ScaffoldState> scaffoldKey... (This was the bug)
 
     return Scaffold(
-      key: scaffoldKey,
+      // ❌ REMOVED: key: scaffoldKey
       drawer: !isDesktop && user != null ? _buildMobileDrawer(context) : null,
-      appBar: isDesktop 
-          ? null // No standard AppBar on desktop (we use a custom top bar in the body)
+      appBar: isDesktop
+          ? null
           : AppBar(
-              title: Text(title),
+              leading: !isDesktop && user != null
+                  ? Builder( // ✅ ADDED: Builder allows us to access Scaffold.of(context)
+                      builder: (context) => IconButton(
+                        icon: const Icon(Icons.menu),
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                      ),
+                    )
+                  : null,
+              title: InkWell(
+                onTap: () => _goHome(context),
+                child: Text(title),
+              ),
               actions: _buildMobileActions(context),
             ),
       body: Column(
         children: [
-          // 🖥️ DESKTOP NAVIGATION BAR (Sticky Top)
           if (isDesktop) _buildDesktopNavBar(context),
-
-          // 📜 SCROLLABLE CONTENT AREA
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // The actual page content
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1200),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                      child: child, 
+                      child: child,
                     ),
                   ),
-
-                  // The Footer (Always at the bottom of the scroll view)
                   const WebFooter(),
                 ],
               ),
@@ -67,31 +84,54 @@ class MainLayout extends StatelessWidget {
   // --- WIDGETS ---
 
   Widget _buildDesktopNavBar(BuildContext context) {
+    final textColor = Theme.of(context).textTheme.titleMedium?.color;
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+
     return Container(
       height: 70,
       padding: const EdgeInsets.symmetric(horizontal: 32),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: scaffoldBg,
         border: Border(bottom: BorderSide(color: Colors.grey.withOpacity(0.1))),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2))
         ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.auto_stories, color: AppColors.primary, size: 28),
-          const SizedBox(width: 8),
-          const Text(
-            'BookBuddies',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: AppColors.textPrimary),
+          InkWell(
+            onTap: () => _goHome(context),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_stories, color: AppColors.primary, size: 28),
+                  const SizedBox(width: 8),
+                  Text(
+                    'BookBuddies',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                      color: textColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(width: 40),
           
+          const SizedBox(width: 40),
+
           // Navigation Links
           _navButton(context, 'My Books', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyBooksPage()))),
           _navButton(context, 'Browse', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllBooksPage()))),
-          _navButton(context, 'Community', () {}),
-          _navButton(context, 'Contact', () {}),
+          _navButton(context, 'Community', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityPage()))),
+          _navButton(context, 'Contact', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage()))),
 
           const Spacer(),
 
@@ -107,19 +147,20 @@ class MainLayout extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           if (user != null) ...[
-             InkWell(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage())),
+            InkWell(
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const ProfilePage())),
               child: CircleAvatar(
                 backgroundColor: AppColors.primary,
-                child: Text(user!.name[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
+                child: Text(user!.name[0].toUpperCase(),
+                    style: const TextStyle(color: Colors.white)),
               ),
             ),
             const SizedBox(width: 8),
-             IconButton(
-              onPressed: AuthService().logout, 
-              icon: const Icon(Icons.logout), 
-              tooltip: 'Logout'
-            ),
+            IconButton(
+                onPressed: AuthService().logout,
+                icon: const Icon(Icons.logout),
+                tooltip: 'Logout'),
           ]
         ],
       ),
@@ -127,7 +168,7 @@ class MainLayout extends StatelessWidget {
   }
 
   Widget _buildMobileDrawer(BuildContext context) {
-    return Drawer(
+      return Drawer(
       child: Column(
         children: [
           UserAccountsDrawerHeader(
@@ -148,6 +189,11 @@ class MainLayout extends StatelessWidget {
             leading: const Icon(Icons.search),
             title: const Text('Browse Books'),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllBooksPage())),
+          ),
+           ListTile(
+            leading: const Icon(Icons.mail),
+            title: const Text('Contact Us'),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage())),
           ),
           const Divider(),
           ListTile(
@@ -175,13 +221,19 @@ class MainLayout extends StatelessWidget {
   }
 
   Widget _navButton(BuildContext context, String label, VoidCallback onTap) {
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: TextButton(
         onPressed: onTap,
         child: Text(
           label,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: textColor,
+            fontSize: 15, 
+            fontWeight: FontWeight.w600
+          ),
         ),
       ),
     );

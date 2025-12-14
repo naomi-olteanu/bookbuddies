@@ -1,3 +1,4 @@
+import 'package:bookbuddies/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'signup_page.dart';
@@ -13,43 +14,142 @@ class _LoginPageState extends State<LoginPage> {
   final _authService = AuthService();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  
   String error = '';
+  bool isLoading = false;
 
   void login() async {
+    setState(() {
+      isLoading = true;
+      error = '';
+    });
+
     try {
       await _authService.login(
-        emailController.text,
-        passwordController.text,
+        emailController.text.trim(),
+        passwordController.text.trim(),
       );
+      // Navigation is usually handled by a stream listener in main.dart
     } catch (e) {
-      setState(() {
-    error = 'Invalid email or password';
-  });
+      if (mounted) {
+        setState(() {
+          error = 'Invalid email or password';
+          isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
-            TextField(controller: passwordController, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
-            ElevatedButton(onPressed: login, child: const Text('Login')),
-            Text(error, style: const TextStyle(color: Colors.red)),
-            TextButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SignupPage()),
+      // Use the theme background color
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ConstrainedBox(
+              // 🔒 CONSTRAINT: Prevents the card from getting too wide on desktop
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Card(
+                elevation: 4,
+                shadowColor: Colors.black26,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 🌿 BRANDING
+                      const Icon(Icons.auto_stories, size: 48, color: AppColors.primary),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Welcome Back',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Login to continue reading',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 32),
+
+                      // 📝 FORM FIELDS
+                      TextField(
+                        controller: emailController,
+                        decoration: _inputDecoration('Email', Icons.email_outlined),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: passwordController,
+                        decoration: _inputDecoration('Password', Icons.lock_outline),
+                        obscureText: true,
+                        onSubmitted: (_) => login(), // Allow "Enter" to login
+                      ),
+
+                      // ⚠️ ERROR MESSAGE
+                      if (error.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          error,
+                          style: const TextStyle(color: Colors.red, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+
+                      const SizedBox(height: 24),
+
+                      // 🚀 ACTION BUTTON
+                      SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : login,
+                          child: isLoading 
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+                            : const Text('Login'),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // 🔗 NAVIGATION LINK
+                      TextButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SignupPage()),
+                        ),
+                        child: const Text('Don\'t have an account? Sign up'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              child: const Text('Create account'),
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, size: 20),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+      ),
+      filled: true,
+      fillColor: Theme.of(context).cardTheme.color,
     );
   }
 }
