@@ -1,6 +1,5 @@
 import 'package:bookbuddies/models/transaction_model.dart';
 import 'package:bookbuddies/services/transaction_service.dart';
-import 'package:bookbuddies/services/user_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +16,6 @@ class AllBooksPage extends StatefulWidget {
 class _AllBooksPageState extends State<AllBooksPage> {
   final _bookService = BookService();
   int userFavors = 0;
-  final _userService = UserService();
   late final String currentUserId;
 
   List<Book> books = [];

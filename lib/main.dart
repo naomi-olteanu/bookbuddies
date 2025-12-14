@@ -23,12 +23,14 @@ class BookBuddiesApp extends StatelessWidget {
       title: 'BookBuddies',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
       home: const AuthWrapper(),
     );
   }
 }
 
-/// 🔐 Auth-based routing
+// Auth-based routing
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
