@@ -1,17 +1,14 @@
-import 'package:bookbuddies/theme/theme_controller.dart';
-import 'package:flutter/material.dart';
+import 'package:bookbuddies/app_layout/main_layout.dart';
+import 'package:bookbuddies/models/book_model.dart';
+import 'package:bookbuddies/models/user_model.dart';
 import 'package:bookbuddies/pages/add_book_page.dart';
 import 'package:bookbuddies/pages/all_books_page.dart';
-import 'package:bookbuddies/pages/my_books_page.dart';
-import 'package:bookbuddies/pages/my_borrow_requests_page.dart';
-import 'package:bookbuddies/pages/my_borrowed_books_page.dart';
-import 'package:bookbuddies/pages/owner_requests_page.dart';
-
+import 'package:bookbuddies/services/book_service.dart';
+import 'package:bookbuddies/widgets/web_carousel.dart';
+import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
-import '../models/user_model.dart';
 import '../theme/app_theme.dart';
-import 'profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -23,267 +20,295 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _auth = AuthService();
   final _userService = UserService();
+  final _bookService = BookService();
+  
   AppUser? user;
+  List<Book> recentBooks = [];
+  List<AppUser> topUsers = []; 
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    loadUser();
+    _loadData();
   }
 
-  void loadUser() async {
-    final u = await _userService.getUser(_auth.currentUser!.uid);
-    setState(() => user = u);
+  Future<void> _loadData() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    final u = await _userService.getUser(currentUser.uid);
+    final books = await _bookService.getAllAvailableBooks(); 
+    // In a real app, fetch users sorted by rating
+    final users = [u!]; 
+
+    if (mounted) {
+      setState(() {
+        user = u;
+        recentBooks = books.take(5).toList();
+        topUsers = users;
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (user == null) {
+    if (isLoading || user == null) {
+      // Just a loader, no layout yet
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    
+    final isDesktop = MediaQuery.of(context).size.width > 900;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'BookBuddies',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          // Theme toggle
-          ValueListenableBuilder<ThemeMode>(
-            valueListenable: ThemeController.themeMode,
-            builder: (context, mode, _) {
-              return IconButton(
-                tooltip: 'Toggle theme',
-                icon: Icon(
-                  mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
-                ),
-                onPressed: ThemeController.toggleTheme,
-              );
-            },
-          ),
-
-          const SizedBox(width: 8),
-          TextButton.icon(
-            onPressed: _auth.logout,
-            icon: const Icon(Icons.logout),
-            label: const Text('Logout'),
-            style: TextButton.styleFrom(foregroundColor: AppColors.accent),
-          ),
-          const SizedBox(width: 12),
-        ],
-      ),
-
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (user!.role == 'admin')
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      'ADMIN ACCOUNT',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-
-                _heroSection(),
-
-                const SizedBox(height: 32),
-
-                Expanded(child: _actionsGrid(context)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 🧠 HERO SECTION
-  Widget _heroSection() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Welcome back, ${user!.name} 👋',
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Share books. Build trust. Read together.',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
-            ],
-          ),
-
-          Row(
-            children: [
-              _statCard('Rating', user!.rating.toStringAsFixed(1)),
-              const SizedBox(width: 16),
-              _statCard('Favors', user!.favors.toString()),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 📊 STAT CARD
-  Widget _statCard(String label, String value) {
-    return Container(
-      width: 110,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    // ✨ WRAPPED IN MAIN LAYOUT
+    return MainLayout(
+      user: user, // Pass the user for the navbar avatar
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: AppColors.textMuted)),
+          _buildHeroSection(context, isDesktop),
+          const SizedBox(height: 60),
+          _buildBooksCarousel(context),
+          const SizedBox(height: 60),
+          _buildUsersCarousel(context),
+          const SizedBox(height: 60),
+          _buildCallToAction(context, isDesktop),
+          const SizedBox(height: 40), 
         ],
       ),
     );
   }
 
-  // 🧭 ACTION GRID
-  Widget _actionsGrid(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 3,
-      mainAxisSpacing: 20,
-      crossAxisSpacing: 20,
-      childAspectRatio: 1.6,
+  // ... (Paste your Hero, Carousel, and CTA methods here) ...
+  // Note: Copy the _buildHeroSection, _heroStat, _buildBooksCarousel, 
+  // _buildUsersCarousel, and _buildCallToAction methods from the previous code block.
+  // They remain exactly the same, but now they are just "Children" of the layout.
+  
+  // Example of one to confirm context:
+  Widget _buildHeroSection(BuildContext context, bool isDesktop) {
+      // ... Copy code from previous response ...
+      // I will include this brief version for copy-paste ease:
+      
+      final textSection = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _actionCard(
-          icon: Icons.person,
-          title: 'Profile',
-          subtitle: 'View and edit your profile',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProfilePage()),
+        Text(
+          'Welcome back, ${user!.name}!',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: isDesktop ? 36 : 28,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        _actionCard(
-          icon: Icons.add,
-          title: 'Add Book',
-          subtitle: 'Share a book you own',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddBookPage()),
-          ),
+        const SizedBox(height: 16),
+        const Text(
+          'Discover your next favorite story or share the magic of reading with your community.',
+          style: TextStyle(color: Colors.white70, fontSize: 16, height: 1.5),
         ),
-        _actionCard(
-          icon: Icons.menu_book,
-          title: 'My Books',
-          subtitle: 'Books you listed',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MyBooksPage()),
-          ),
-        ),
-        _actionCard(
-          icon: Icons.search,
-          title: 'Browse Books',
-          subtitle: 'Find books to borrow',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AllBooksPage()),
-          ),
-        ),
-        _actionCard(
-          icon: Icons.schedule,
-          title: 'My Requests',
-          subtitle: 'Borrow requests you made',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MyBorrowRequestsPage()),
-          ),
-        ),
-        _actionCard(
-          icon: Icons.handshake,
-          title: 'Borrowed Books',
-          subtitle: 'Books you currently have',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MyBorrowedBooksPage()),
-          ),
-        ),
-        _actionCard(
-          icon: Icons.inbox,
-          title: 'Requests for My Books',
-          subtitle: 'Approve or reject requests',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const OwnerRequestsPage()),
+        const SizedBox(height: 32),
+        ElevatedButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllBooksPage())),
+          icon: const Icon(Icons.search),
+          label: const Text('Start Browsing'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: AppColors.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           ),
         ),
       ],
     );
+
+    final statsSection = Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+           _heroStat('Rating', user!.rating.toStringAsFixed(1), Icons.star),
+           Container(height: 50, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 24)),
+           _heroStat('Favors', user!.favors.toString(), Icons.handshake),
+        ],
+      ),
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isDesktop ? 40 : 24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: isDesktop
+          ? Row(children: [Expanded(child: textSection), const SizedBox(width: 40), statsSection])
+          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [textSection, const SizedBox(height: 32), statsSection]),
+    );
   }
 
-  // 🧩 ACTION CARD
-  Widget _actionCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 32, color: AppColors.primary),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+  Widget _heroStat(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white, size: 28),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+      ],
+    );
+  }
+  
+  // (Include _buildBooksCarousel, _buildUsersCarousel, _buildCallToAction from previous response)
+    Widget _buildBooksCarousel(BuildContext context) {
+    return WebCarousel<Book>(
+      title: 'Trending Books',
+      items: recentBooks,
+      onSeeAll: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllBooksPage())),
+      itemBuilder: (context, book) {
+        final imageUrl = book.userImages.isNotEmpty ? book.userImages.first : null;
+        return Container(
+          width: 160,
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(subtitle, style: const TextStyle(color: AppColors.textMuted)),
-          ],
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: imageUrl != null 
+                    ? Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity)
+                    : Container(color: Colors.grey[300], child: const Center(child: Icon(Icons.book, color: Colors.grey))),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      book.authors.join(', '), 
+                      maxLines: 1, 
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildUsersCarousel(BuildContext context) {
+    return WebCarousel<AppUser>(
+      title: 'Top Contributors',
+      items: topUsers,
+      height: 200,
+      itemBuilder: (context, userItem) {
+        return Container(
+          width: 150,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: AppColors.secondary,
+                child: Text(userItem.name[0].toUpperCase(), style: const TextStyle(fontSize: 24, color: Colors.white)),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                userItem.name,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.star, size: 14, color: Colors.amber),
+                  Text(' ${userItem.rating.toStringAsFixed(1)}', style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCallToAction(BuildContext context, bool isDesktop) {
+    final textContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Text(
+          'Have books gathering dust?',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
+        SizedBox(height: 8),
+        Text(
+          'Share them with the community and earn Favor Points to borrow new reads!',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      ],
+    );
+
+    final buttonContent = ElevatedButton(
+      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddBookPage())),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.secondary,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        minimumSize: isDesktop ? null : const Size(double.infinity, 50),
       ),
+      child: const Text('Add a Book Now'),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: AppColors.secondary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: isDesktop
+          ? Row(children: [Expanded(child: textContent), buttonContent])
+          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [textContent, const SizedBox(height: 24), buttonContent]),
     );
   }
 }
