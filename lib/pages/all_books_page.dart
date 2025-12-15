@@ -10,6 +10,7 @@ import '../models/transaction_model.dart';
 import '../services/transaction_service.dart';
 import '../services/book_service.dart';
 import '../models/book_model.dart';
+import 'book_details_page.dart';
 
 class AllBooksPage extends StatefulWidget {
   const AllBooksPage({super.key});
@@ -24,8 +25,8 @@ class _AllBooksPageState extends State<AllBooksPage> {
   final _userService = UserService();
 
   // State
-  List<Book> _allBooks = []; // Master list
-  List<Book> _filteredBooks = []; // Display list
+  List<Book> _allBooks = []; 
+  List<Book> _filteredBooks = []; 
   AppUser? _currentUser;
   int _userFavors = 0;
   bool _isLoading = true;
@@ -54,7 +55,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    // Fetch data in parallel
     final results = await Future.wait([
       _bookService.getAllAvailableBooks(),
       _userService.getUser(uid),
@@ -64,7 +64,7 @@ class _AllBooksPageState extends State<AllBooksPage> {
     if (mounted) {
       setState(() {
         _allBooks = results[0] as List<Book>;
-        _filteredBooks = _allBooks; // Initially show all
+        _filteredBooks = _allBooks; 
         _currentUser = results[1] as AppUser?;
         
         final userDoc = results[2] as DocumentSnapshot;
@@ -85,7 +85,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
       } else {
         _filteredBooks = _allBooks.where((book) {
           final titleMatch = book.title.toLowerCase().contains(lowerQuery);
-          // Check if ANY author matches
           final authorMatch = book.authors.any((author) => 
             author.toLowerCase().contains(lowerQuery));
           
@@ -193,8 +192,8 @@ class _AllBooksPageState extends State<AllBooksPage> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _filteredBooks.length,
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 280, // Slightly wider cards for browse view
-                childAspectRatio: 0.75,  // Taller cards
+                maxCrossAxisExtent: 280, 
+                childAspectRatio: 0.75,
                 crossAxisSpacing: 24,
                 mainAxisSpacing: 24,
               ),
@@ -239,92 +238,103 @@ class _AllBooksPageState extends State<AllBooksPage> {
     return Card(
       elevation: 2,
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 🖼️ IMAGE
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                imageUrl != null
-                    ? Image.network(imageUrl, fit: BoxFit.cover)
-                    : Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.book, size: 48, color: Colors.grey),
-                      ),
-                if (isMe)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text('YOURS', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-              ],
+      // 2. Added InkWell to make the whole card clickable
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MyBookDetailsPage(book: book),
             ),
-          ),
-          
-          // ℹ️ DETAILS
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  book.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  book.authors.join(', '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.person, size: 14, color: Colors.grey[500]),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        isMe ? 'You' : book.ownerName,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                
-                // 🔘 ACTION BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  child: isMe
-                      ? OutlinedButton(
-                          onPressed: null, // Disabled
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          child: const Text('Your Listing', style: TextStyle(color: Colors.grey)),
-                        )
-                      : ElevatedButton(
-                          onPressed: () => requestBorrow(book),
-                          child: const Text('Request Borrow'),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 🖼️ IMAGE
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  imageUrl != null
+                      ? Image.network(imageUrl, fit: BoxFit.cover)
+                      : Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.book, size: 48, color: Colors.grey),
                         ),
-                ),
-              ],
+                  if (isMe)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text('YOURS', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+            
+            // ℹ️ DETAILS
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    book.authors.join(', '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 14, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          isMe ? 'You' : book.ownerName,
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // 🔘 ACTION BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    child: isMe
+                        ? OutlinedButton(
+                            onPressed: null, // Disabled
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            child: const Text('Your Listing', style: TextStyle(color: Colors.grey)),
+                          )
+                        : ElevatedButton(
+                            onPressed: () => requestBorrow(book),
+                            child: const Text('Request Borrow'),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

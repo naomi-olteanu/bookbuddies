@@ -34,17 +34,15 @@ class _ProfilePageState extends State<ProfilePage> {
     if (uid == null) return;
 
     final u = await _userService.getUser(uid);
-    if (u != null) {
-      nameController.text = u.name;
-      bioController.text = u.bio;
-      if (mounted) {
-        setState(() {
-          user = u;
-          isLoading = false;
-        });
-      }
+    nameController.text = u.name;
+    bioController.text = u.bio;
+    if (mounted) {
+      setState(() {
+        user = u;
+        isLoading = false;
+      });
     }
-  }
+    }
 
   Future<void> save() async {
     if (user == null) return;
@@ -81,8 +79,6 @@ class _ProfilePageState extends State<ProfilePage> {
     if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
-    final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return MainLayout(
       title: 'My Profile',

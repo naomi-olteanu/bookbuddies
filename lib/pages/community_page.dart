@@ -1,6 +1,5 @@
 import 'package:bookbuddies/app_layout/main_layout.dart';
 import 'package:bookbuddies/models/user_model.dart';
-import 'package:bookbuddies/services/user_service.dart';
 import 'package:bookbuddies/theme/app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,7 +13,6 @@ class CommunityPage extends StatefulWidget {
 }
 
 class _CommunityPageState extends State<CommunityPage> {
-  final _userService = UserService();
   
   List<AppUser> _topUsers = [];
   AppUser? _currentUser;

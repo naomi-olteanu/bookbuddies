@@ -1,5 +1,4 @@
 import 'package:bookbuddies/app_layout/main_layout.dart';
-import 'package:bookbuddies/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class ContactPage extends StatefulWidget {

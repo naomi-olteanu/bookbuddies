@@ -7,7 +7,7 @@ import '../services/auth_service.dart';
 import '../services/book_service.dart';
 import '../models/book_model.dart';
 import '../widgets/my_book_card.dart';
-import 'my_book_details_page.dart';
+import 'book_details_page.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class MyBooksPage extends StatefulWidget {

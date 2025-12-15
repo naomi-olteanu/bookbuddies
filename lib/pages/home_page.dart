@@ -3,8 +3,10 @@ import 'package:bookbuddies/models/book_model.dart';
 import 'package:bookbuddies/models/user_model.dart';
 import 'package:bookbuddies/pages/add_book_page.dart';
 import 'package:bookbuddies/pages/all_books_page.dart';
+import 'package:bookbuddies/pages/book_details_page.dart';
 import 'package:bookbuddies/services/book_service.dart';
 import 'package:bookbuddies/widgets/web_carousel.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
@@ -34,22 +36,36 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadData() async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) return;
+  final currentUser = _auth.currentUser;
+  if (currentUser == null) return;
 
-    final u = await _userService.getUser(currentUser.uid);
-    final books = await _bookService.getAllAvailableBooks(); 
-    final users = [u]; 
+  // 1. Fetch Current User
+  final u = await _userService.getUser(currentUser.uid);
+  
+  // 2. Fetch Books
+  final books = await _bookService.getAllAvailableBooks();
 
-    if (mounted) {
-      setState(() {
-        user = u;
-        recentBooks = books.take(5).toList();
-        topUsers = users;
-        isLoading = false;
-      });
-    }
+  // 3. Fetch ALL Users for the leaderboard
+  final userSnapshot = await FirebaseFirestore.instance.collection('users').get();
+  final allUsers = userSnapshot.docs.map((d) => AppUser.fromMap(d.id, d.data())).toList();
+
+  // 4. Sort Users (Same logic as Community Page)
+  // Score = (Rating * 10) + (Favors * 2)
+  allUsers.sort((a, b) {
+    final scoreA = (a.rating * 10) + (a.favors * 2);
+    final scoreB = (b.rating * 10) + (b.favors * 2);
+    return scoreB.compareTo(scoreA); // Descending order
+  });
+
+  if (mounted) {
+    setState(() {
+      user = u;
+      recentBooks = books.take(5).toList();
+      topUsers = allUsers.take(5).toList(); // Take the top 5 sorted users
+      isLoading = false;
+    });
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +74,6 @@ class _HomePageState extends State<HomePage> {
     }
     
     final isDesktop = MediaQuery.of(context).size.width > 900;
-
 
     return MainLayout(
       user: user,
@@ -78,9 +93,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   Widget _buildHeroSection(BuildContext context, bool isDesktop) {
-      
       final textSection = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -163,59 +176,68 @@ class _HomePageState extends State<HomePage> {
     );
   }
   
-
-    Widget _buildBooksCarousel(BuildContext context) {
+  Widget _buildBooksCarousel(BuildContext context) {
     return WebCarousel<Book>(
       title: 'Trending Books',
       items: recentBooks,
       onSeeAll: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllBooksPage())),
       itemBuilder: (context, book) {
         final imageUrl = book.userImages.isNotEmpty ? book.userImages.first : null;
-        return Container(
-          width: 160,
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: imageUrl != null 
-                    ? Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity)
-                    : Container(color: Colors.grey[300], child: const Center(child: Icon(Icons.book, color: Colors.grey))),
+        
+        // ✅ MADE CLICKABLE
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => MyBookDetailsPage(book: book)),
+            );
+          },
+          child: Container(
+            width: 160,
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      book.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      book.authors.join(', '), 
-                      maxLines: 1, 
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                  ],
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: imageUrl != null 
+                      ? Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity)
+                      : Container(color: Colors.grey[300], child: const Center(child: Icon(Icons.book, color: Colors.grey))),
+                  ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        book.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        book.authors.join(', '), 
+                        maxLines: 1, 
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

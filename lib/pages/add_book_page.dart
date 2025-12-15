@@ -11,7 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class AddBookPage extends StatefulWidget {
-  final Book? bookToEdit; // 🆕 Optional parameter for editing
+  final Book? bookToEdit;
 
   const AddBookPage({super.key, this.bookToEdit});
 
@@ -40,8 +40,8 @@ class _AddBookPageState extends State<AddBookPage> {
   
   // Images
   final ImagePicker _picker = ImagePicker();
-  List<XFile> newImages = [];       // 🆕 New photos to upload
-  List<String> existingImages = []; // 🆕 Existing URLs from Firestore
+  List<XFile> newImages = [];
+  List<String> existingImages = [];
   bool isSaving = false;
 
   @override
@@ -49,7 +49,6 @@ class _AddBookPageState extends State<AddBookPage> {
     super.initState();
     final b = widget.bookToEdit;
 
-    // 🆕 Initialize controllers with existing data or defaults
     titleController = TextEditingController(text: b?.title ?? '');
     authorsController = TextEditingController(text: b?.authors.join(', ') ?? '');
     descriptionController = TextEditingController(text: b?.description ?? '');
@@ -58,8 +57,8 @@ class _AddBookPageState extends State<AddBookPage> {
     
     if (b != null) {
       selectedCondition = b.condition;
-      existingImages = List.from(b.userImages); // Copy list
-      manualMode = true; // Default to manual mode when editing
+      existingImages = List.from(b.userImages);
+      manualMode = true;
     }
   }
 
@@ -84,7 +83,6 @@ class _AddBookPageState extends State<AddBookPage> {
       return;
     }
 
-    // 🆕 Check if we have ANY images (old or new)
     if (existingImages.isEmpty && newImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add at least one book photo')),
@@ -102,25 +100,17 @@ class _AddBookPageState extends State<AddBookPage> {
           .where((a) => a.isNotEmpty)
           .toList();
 
-      // Determine ID: Use existing if editing, otherwise empty (let Firestore gen it)
       final bookId = widget.bookToEdit?.id ?? '';
-
-      // 1. Upload NEW images first
-      // Note: If creating a NEW book, we need the ID first.
-      // Strategy: 
-      // - If Editing: We have ID. Upload new images.
-      // - If Creating: Create doc first, get ID, then upload.
       
       List<String> finalImageUrls = [...existingImages];
 
       if (widget.bookToEdit != null) {
-         // Editing: Upload new images directly
          final newUrls = await uploadImages(bookId);
          finalImageUrls.addAll(newUrls);
       }
 
       final bookData = Book(
-        id: bookId, // Will be ignored by add() but used by update()
+        id: bookId,
         title: titleController.text.trim(),
         authors: authors,
         description: descriptionController.text.trim(),
@@ -131,29 +121,22 @@ class _AddBookPageState extends State<AddBookPage> {
         language: languageController.text.trim(),
         edition: editionController.text.trim(),
         condition: selectedCondition,
-        userImages: finalImageUrls, // Save the combined list
+        userImages: finalImageUrls,
         ownerId: user.uid,
         ownerName: user.email ?? '',
         isAvailable: widget.bookToEdit?.isAvailable ?? true,
       );
 
       if (widget.bookToEdit != null) {
-        // 🆕 UPDATE EXISTING
         await _bookService.updateBook(bookData);
       } else {
-        // 🆕 CREATE NEW
         final docRef = await _bookService.addBookAndReturnRef(bookData);
-        // Now we have an ID, upload images
         final newUrls = await uploadImages(docRef.id);
-        // Update the doc with the image URLs
         await docRef.update({'userImages': newUrls});
       }
 
       if (!mounted) return;
-      Navigator.pop(context); // Go back
-      
-      // If we came from details page, popping might show stale data unless we used .then() reload
-      // But usually Flutter rebuilds if state management is good.
+      Navigator.pop(context);
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(widget.bookToEdit != null ? 'Changes saved!' : 'Book published!')),
@@ -188,7 +171,6 @@ class _AddBookPageState extends State<AddBookPage> {
     for (int i = 0; i < newImages.length; i++) {
       try {
         final image = newImages[i];
-        // Use timestamp to avoid name collisions
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final ref = storage.ref('books/$bookId/photo_${timestamp}_$i.jpg');
         
@@ -269,7 +251,6 @@ class _AddBookPageState extends State<AddBookPage> {
             ),
             const SizedBox(height: 24),
             
-            // Upload Button
             if (totalCount < 5)
               InkWell(
                 onTap: pickImages,
@@ -304,12 +285,10 @@ class _AddBookPageState extends State<AddBookPage> {
 
             const SizedBox(height: 24),
 
-            // 🆕 COMBINED IMAGE LIST (Existing + New)
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                // 1. Existing Images (Network)
                 ...existingImages.asMap().entries.map((entry) {
                   return _imageThumbnail(
                     isNetwork: true, 
@@ -317,7 +296,6 @@ class _AddBookPageState extends State<AddBookPage> {
                     onDelete: () => setState(() => existingImages.removeAt(entry.key))
                   );
                 }),
-                // 2. New Images (File/Byte)
                 ...newImages.asMap().entries.map((entry) {
                   return _imageThumbnail(
                     isNetwork: false, 
@@ -338,11 +316,19 @@ class _AddBookPageState extends State<AddBookPage> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: isNetwork 
-            ? Image.network(path, width: 80, height: 110, fit: BoxFit.cover)
-            : (kIsWeb 
-                ? Image.network(path, width: 80, height: 110, fit: BoxFit.cover) // Web XFile path is a blob URL
-                : Image.file(File(path), width: 80, height: 110, fit: BoxFit.cover)),
+          child: SizedBox(
+            width: 80,
+            height: 110,
+            child: isNetwork 
+              ? Image.network(
+                  path, 
+                  fit: BoxFit.cover,
+                  errorBuilder: (_,__,___) => Container(color: Colors.grey[300], child: const Icon(Icons.broken_image)),
+                )
+              : (kIsWeb 
+                  ? Image.network(path, fit: BoxFit.cover) 
+                  : Image.file(File(path), fit: BoxFit.cover)),
+          ),
         ),
         Positioned(
           top: 4,
@@ -364,7 +350,6 @@ class _AddBookPageState extends State<AddBookPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Hide Google Search if editing (to keep it simple)
         if (!isEditing && !manualMode && selectedGoogleBook == null) 
           _buildGoogleSearch(),
 
@@ -417,8 +402,6 @@ class _AddBookPageState extends State<AddBookPage> {
     );
   }
 
-  // ... (Include _buildGoogleSearch, _buildSelectedBookCard, _buildTextField, _inputDecoration from previous response)
-  // They are largely unchanged, just ensure they are present in the class.
   Widget _buildGoogleSearch() {
     return Column(
       children: [
@@ -449,9 +432,17 @@ class _AddBookPageState extends State<AddBookPage> {
               itemBuilder: (context, index) {
                 final book = searchResults[index];
                 return ListTile(
-                  leading: book.thumbnail != null 
-                    ? Image.network(book.thumbnail!, width: 40) 
-                    : const Icon(Icons.book),
+                  leading: SizedBox( 
+                    width: 40,
+                    height: 60,
+                    child: book.thumbnail != null 
+                      ? Image.network(
+                          book.thumbnail!, 
+                          fit: BoxFit.cover,
+                          errorBuilder: (_,__,___) => const Icon(Icons.book),
+                        )
+                      : const Icon(Icons.book),
+                  ),
                   title: Text(book.title, maxLines: 1),
                   subtitle: Text(book.authors.join(', '), maxLines: 1),
                   onTap: () {
@@ -486,9 +477,17 @@ class _AddBookPageState extends State<AddBookPage> {
       child: Row(
         children: [
           if (selectedGoogleBook!.thumbnail != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(selectedGoogleBook!.thumbnail!, width: 60),
+            SizedBox(
+              width: 60,
+              height: 90,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  selectedGoogleBook!.thumbnail!, 
+                  fit: BoxFit.cover,
+                  errorBuilder: (_,__,___) => const Icon(Icons.book),
+                ),
+              ),
             ),
           const SizedBox(width: 16),
           Expanded(
