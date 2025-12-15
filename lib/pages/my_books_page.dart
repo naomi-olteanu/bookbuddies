@@ -20,10 +20,10 @@ class MyBooksPage extends StatefulWidget {
 class _MyBooksPageState extends State<MyBooksPage> {
   final _auth = AuthService();
   final _bookService = BookService();
-  final _userService = UserService(); // Added to fetch user data for Layout
+  final _userService = UserService();
 
   List<Book> books = [];
-  AppUser? currentUser; // Added to pass to MainLayout
+  AppUser? currentUser;
   bool isLoading = true;
 
   @override
@@ -36,7 +36,6 @@ class _MyBooksPageState extends State<MyBooksPage> {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
 
-    // Fetch both user and books in parallel for speed
     final results = await Future.wait([
       _bookService.getBooksByOwner(uid),
       _userService.getUser(uid),
@@ -74,21 +73,14 @@ class _MyBooksPageState extends State<MyBooksPage> {
     );
 
     if (confirmed != true) return;
-
-    // Show loading indicator during deletion if desired,
-    // but for now we'll just process it.
     try {
-      // 1. Delete images from Storage
       final folderRef = FirebaseStorage.instance.ref('books/${book.id}');
       final items = await folderRef.listAll();
       for (final item in items.items) {
         await item.delete();
       }
-
-      // 2. Delete Firestore document
       await _bookService.deleteBook(book.id);
 
-      // 3. Refresh UI
       if (mounted) {
         setState(() {
           books.removeWhere((b) => b.id == book.id);
@@ -114,11 +106,10 @@ class _MyBooksPageState extends State<MyBooksPage> {
 
     return MainLayout(
       title: 'My Books',
-      user: currentUser, // Pass user for Avatar in AppBar
+      user: currentUser,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🏷️ HEADER SECTION
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -140,7 +131,6 @@ class _MyBooksPageState extends State<MyBooksPage> {
                   ),
                 ],
               ),
-              // "Add Book" Button visible on Desktop
               if (MediaQuery.of(context).size.width > 600)
                 ElevatedButton.icon(
                   onPressed: () {
@@ -159,16 +149,15 @@ class _MyBooksPageState extends State<MyBooksPage> {
 
           const SizedBox(height: 32),
 
-          // 📚 BOOK GRID or EMPTY STATE
           books.isEmpty
               ? _buildEmptyState(context)
               : GridView.builder(
-                  shrinkWrap: true, // Important because MainLayout scrolls
+                  shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: books.length,
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 220, // Responsive: cards max 220px wide
-                    childAspectRatio: 0.65, // Maintain book ratio
+                    maxCrossAxisExtent: 220,
+                    childAspectRatio: 0.65,
                     crossAxisSpacing: 24,
                     mainAxisSpacing: 24,
                   ),
@@ -193,7 +182,6 @@ class _MyBooksPageState extends State<MyBooksPage> {
     );
   }
 
-  // 🕸️ EMPTY STATE WIDGET
   Widget _buildEmptyState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(40),

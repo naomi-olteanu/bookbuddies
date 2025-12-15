@@ -29,7 +29,6 @@ class _LoginPageState extends State<LoginPage> {
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-      // Navigation is usually handled by a stream listener in main.dart
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -43,15 +42,13 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Use the theme background color
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: ConstrainedBox(
-              // 🔒 CONSTRAINT: Prevents the card from getting too wide on desktop
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: const BoxConstraints(maxWidth: 400), // for desktop
               child: Card(
                 elevation: 4,
                 shadowColor: Colors.black26,
@@ -64,7 +61,6 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 🌿 BRANDING
                       const Icon(Icons.auto_stories, size: 48, color: AppColors.primary),
                       const SizedBox(height: 16),
                       Text(
@@ -82,7 +78,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 32),
 
-                      // 📝 FORM FIELDS
                       TextField(
                         controller: emailController,
                         decoration: _inputDecoration('Email', Icons.email_outlined),
@@ -92,10 +87,9 @@ class _LoginPageState extends State<LoginPage> {
                         controller: passwordController,
                         decoration: _inputDecoration('Password', Icons.lock_outline),
                         obscureText: true,
-                        onSubmitted: (_) => login(), // Allow "Enter" to login
+                        onSubmitted: (_) => login(), // enter for login
                       ),
 
-                      // ⚠️ ERROR MESSAGE
                       if (error.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         Text(
@@ -107,7 +101,6 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 24),
 
-                      // 🚀 ACTION BUTTON
                       SizedBox(
                         height: 48,
                         child: ElevatedButton(
@@ -120,7 +113,6 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 16),
 
-                      // 🔗 NAVIGATION LINK
                       TextButton(
                         onPressed: () => Navigator.push(
                           context,

@@ -39,13 +39,13 @@ class _HomePageState extends State<HomePage> {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    // 1. Fetch Current User
+    // fetch Current User
     final u = await _userService.getUser(currentUser.uid);
 
-    // 2. Fetch Books
+    // fetch Books
     final books = await _bookService.getAllAvailableBooks();
 
-    // 3. Fetch ALL Users for the leaderboard
+    // fetch all Users (leaderboard)
     final userSnapshot = await FirebaseFirestore.instance
         .collection('users')
         .get();
@@ -53,7 +53,6 @@ class _HomePageState extends State<HomePage> {
         .map((d) => AppUser.fromMap(d.id, d.data()))
         .toList();
 
-    // 4. Sort Users (Same logic as Community Page)
     // Score = (Rating * 10) + (Favors * 2)
     allUsers.sort((a, b) {
       final scoreA = (a.rating * 10) + (a.favors * 2);
@@ -65,7 +64,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         user = u;
         recentBooks = books.take(5).toList();
-        topUsers = allUsers.take(5).toList(); // Take the top 5 sorted users
+        topUsers = allUsers.take(5).toList(); // Take top 5 
         isLoading = false;
       });
     }

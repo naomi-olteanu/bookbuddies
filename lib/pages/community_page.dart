@@ -30,12 +30,11 @@ class _CommunityPageState extends State<CommunityPage> {
     final snapshot = await FirebaseFirestore.instance.collection('users').get();
     final allUsers = snapshot.docs.map((d) => AppUser.fromMap(d.id, d.data())).toList();
 
-    // 🔢 SCORING LOGIC
     // Score = (Rating * 10) + (Favors * 2)
     allUsers.sort((a, b) {
       final scoreA = (a.rating * 10) + (a.favors * 2);
       final scoreB = (b.rating * 10) + (b.favors * 2);
-      return scoreB.compareTo(scoreA); // Descending
+      return scoreB.compareTo(scoreA); // descending
     });
 
     AppUser? current;
@@ -60,7 +59,6 @@ class _CommunityPageState extends State<CommunityPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Split: Top 3 (Podium) vs Rest (List)
     final top3 = _topUsers.take(3).toList();
     final rest = _topUsers.length > 3 ? _topUsers.sublist(3) : <AppUser>[];
 
@@ -85,7 +83,6 @@ class _CommunityPageState extends State<CommunityPage> {
           
           const SizedBox(height: 40),
 
-          // 🥇 PODIUM SECTION
           if (top3.isNotEmpty)
             SizedBox(
               height: 320,
@@ -97,7 +94,7 @@ class _CommunityPageState extends State<CommunityPage> {
                   if (top3.length > 1) 
                     _buildPodiumUser(context, top3[1], 2, height: 220, color: Colors.grey.shade400),
                   
-                  // 1st Place (Center, Tallest)
+                  // 1st Place
                   _buildPodiumUser(context, top3[0], 1, height: 280, color: Colors.amber),
 
                   // 3rd Place
@@ -111,7 +108,6 @@ class _CommunityPageState extends State<CommunityPage> {
           const Divider(),
           const SizedBox(height: 20),
 
-          // 📜 LIST SECTION
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -125,7 +121,6 @@ class _CommunityPageState extends State<CommunityPage> {
 
           const SizedBox(height: 60),
 
-          // ℹ️ SCORING EXPLANATION (Bottom)
           Container(
             padding: const EdgeInsets.all(32),
             constraints: const BoxConstraints(maxWidth: 700),
@@ -152,7 +147,7 @@ class _CommunityPageState extends State<CommunityPage> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'We believe in rewarding those who give back. Your Community Score reflects both your generosity and your reputation.',
+                  'We believe in rewarding those who give back. Your Community Score reflects both your generosity and your reputation. The score is calculated as follows: Score = (Rating * 10) + (Favors * 2)',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 15, height: 1.5),
                 ),
@@ -184,7 +179,6 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 
-  // 🏛️ PODIUM WIDGET
   Widget _buildPodiumUser(BuildContext context, AppUser user, int rank, {required double height, required Color color}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -219,7 +213,6 @@ class _CommunityPageState extends State<CommunityPage> {
           ),
           const SizedBox(height: 12),
           
-          // Name & Level
           Text(
             user.name.split(' ').first, 
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -230,7 +223,6 @@ class _CommunityPageState extends State<CommunityPage> {
           ),
           const SizedBox(height: 8),
 
-          // The Bar
           Container(
             width: 80,
             height: height - 120, 
@@ -255,7 +247,6 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 
-  // 📝 LIST TILE WIDGET
   Widget _buildRankListTile(BuildContext context, AppUser user, int rank) {
     final isMe = user.id == _currentUser?.id;
 
@@ -311,7 +302,7 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 
-  // 🎮 GAMIFICATION LOGIC
+  // Gamification
   String _calculateLevel(AppUser user) {
     if (user.favors > 50) return '🧙‍♂️ Grand Archivist';
     if (user.favors > 20) return '🗝️ Keeper of Books';

@@ -13,16 +13,14 @@ class ContactPage extends StatefulWidget {
 }
 
 class _ContactPageState extends State<ContactPage> {
-  // Services
+
   final _auth = AuthService();
   final _userService = UserService();
 
-  // Controllers
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _messageController = TextEditingController();
   
-  // State
   AppUser? _currentUser;
   bool _isLoading = true;
   bool _isSending = false;
@@ -33,7 +31,6 @@ class _ContactPageState extends State<ContactPage> {
     _loadUser();
   }
 
-  // 1. Fetch User to make AppBar consistent
   Future<void> _loadUser() async {
     final uid = _auth.currentUser?.uid;
     if (uid != null) {
@@ -43,7 +40,6 @@ class _ContactPageState extends State<ContactPage> {
           _currentUser = user;
           _isLoading = false;
           
-          // Auto-fill form if user is found
           if (user != null) {
             _nameController.text = user.name;
             _emailController.text = user.email;
@@ -82,10 +78,9 @@ class _ContactPageState extends State<ContactPage> {
 
     return MainLayout(
       title: 'Contact Us',
-      user: _currentUser, // ✅ PASS USER HERE
+      user: _currentUser,
       child: Column(
         children: [
-          // 🌿 HEADER
           Text(
             'Get in Touch',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -97,7 +92,7 @@ class _ContactPageState extends State<ContactPage> {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
             child: Text(
-              'Have a question about a book swap? Found a bug? Or just want to say hi? We\'d love to hear from you.',
+              'Have a question? Found a bug? You can contact us with the following form.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).textTheme.bodySmall?.color,
@@ -107,7 +102,6 @@ class _ContactPageState extends State<ContactPage> {
           ),
           const SizedBox(height: 60),
 
-          // 📐 RESPONSIVE CONTENT
           if (isDesktop) 
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +130,7 @@ class _ContactPageState extends State<ContactPage> {
       children: [
         _infoRow(context, Icons.email_outlined, 'Email Us', 'support@bookbuddies.com'),
         const SizedBox(height: 32),
-        _infoRow(context, Icons.location_on_outlined, 'Visit Us', '123 Reading Lane\nBooktown, BK 90210'),
+        _infoRow(context, Icons.location_on_outlined, 'Visit Us', 'Calea Victoriei\nBucuresti, Sector 1'),
         const SizedBox(height: 32),
         _infoRow(context, Icons.access_time, 'Working Hours', 'Mon - Fri: 9am - 5pm'),
       ],

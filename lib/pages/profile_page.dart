@@ -1,7 +1,7 @@
 import 'package:bookbuddies/app_layout/main_layout.dart';
-import 'package:bookbuddies/pages/my_borrow_requests_page.dart'; // 1. Import
-import 'package:bookbuddies/pages/my_borrowed_books_page.dart';  // 2. Import
-import 'package:bookbuddies/pages/owner_requests_page.dart';     // 3. Import
+import 'package:bookbuddies/pages/my_borrow_requests_page.dart';
+import 'package:bookbuddies/pages/my_borrowed_books_page.dart';
+import 'package:bookbuddies/pages/owner_requests_page.dart';
 import 'package:bookbuddies/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
@@ -93,7 +93,6 @@ class _ProfilePageState extends State<ProfilePage> {
               
               const SizedBox(height: 40),
               
-              // 🚀 NEW: DASHBOARD LINKS
               const Text(
                 'My Activity',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -103,7 +102,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 40),
 
-              // EDIT FORM
               Card(
                 elevation: 2,
                 child: Padding(
@@ -150,9 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // 🧩 NEW DASHBOARD GRID
   Widget _buildDashboardGrid(BuildContext context) {
-    // Check screen width for responsiveness
     final isDesktop = MediaQuery.of(context).size.width > 600;
 
     final children = [
@@ -228,9 +224,6 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-
-  // ... (Keep _buildProfileHeader, _buildStatsRow, _buildStatCard, _buildTextField from previous response)
-  // Ensure you paste the helper methods here so the file is complete.
   
   Widget _buildProfileHeader(BuildContext context) {
     return Column(

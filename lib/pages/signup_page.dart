@@ -44,8 +44,8 @@ class _SignupPageState extends State<SignupPage> {
         name: nameController.text.trim(),
         email: emailController.text.trim(),
         role: 'user',
-        rating: 5.0, // Start with a good rating to be welcoming
-        favors: 5,   // Start with 5 favors
+        rating: 5.0,
+        favors: 10,
         bio: 'I love reading!',
         profilePicture: '',
         ratingSum: 5,
@@ -55,7 +55,7 @@ class _SignupPageState extends State<SignupPage> {
       await _userService.createUser(user);
       
       if (mounted) {
-        Navigator.pop(context); // Go back to login or let main.dart handle auth state
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -78,7 +78,6 @@ class _SignupPageState extends State<SignupPage> {
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: ConstrainedBox(
-              // 🔒 CONSTRAINT: Matches the Login Page width
               constraints: const BoxConstraints(maxWidth: 400),
               child: Card(
                 elevation: 4,

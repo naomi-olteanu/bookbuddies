@@ -103,7 +103,6 @@ class _OwnerRequestsPageState extends State<OwnerRequestsPage> {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            // Status Icon
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -114,7 +113,6 @@ class _OwnerRequestsPageState extends State<OwnerRequestsPage> {
             ),
             const SizedBox(width: 16),
             
-            // Text Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,7 +144,6 @@ class _OwnerRequestsPageState extends State<OwnerRequestsPage> {
               ),
             ),
 
-            // Actions
             if (r.status == 'pending') ...[
               IconButton(
                 icon: const Icon(Icons.check_circle, color: Colors.green, size: 30),

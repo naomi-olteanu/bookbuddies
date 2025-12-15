@@ -78,8 +78,6 @@ class _RateBorrowerPageState extends State<RateBorrowerPage> {
                     style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 24),
-
-                  // ⭐ STAR RATING SELECTOR
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(5, (index) {

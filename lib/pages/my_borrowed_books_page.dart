@@ -90,7 +90,7 @@ class _MyBorrowedBooksPageState extends State<MyBorrowedBooksPage> {
                   itemCount: borrowedBooks.length,
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 400,
-                    mainAxisExtent: 180, // Fixed height for landscape cards
+                    mainAxisExtent: 180,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),
