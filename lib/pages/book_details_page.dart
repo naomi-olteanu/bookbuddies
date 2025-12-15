@@ -229,7 +229,6 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
         ),
         const SizedBox(height: 16),
 
-        // 🏷️ TITLE HEADER & EDIT BUTTON (MOVED HERE)
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -256,7 +255,6 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
                 ],
               ),
             ),
-            // Edit button sits to the right of the title block
             if (isOwner) ...[
               const SizedBox(width: 16),
               OutlinedButton.icon(
@@ -269,7 +267,7 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
                       ), // 🆕 Pass the book!
                     ),
                   ).then((_) {
-                    // 🆕 Reload user or refresh logic if needed when coming back
+                    if (mounted) Navigator.pop(context);
                   });
                 },
                 icon: const Icon(Icons.edit, size: 18),
@@ -281,7 +279,6 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
                     horizontal: 16,
                     vertical: 12,
                   ),
-                  // Make it slightly more compact for the header
                   visualDensity: VisualDensity.compact,
                 ),
               ),
@@ -291,7 +288,6 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
 
         const SizedBox(height: 32),
 
-        // Owner Info
         Row(
           children: [
             const CircleAvatar(
@@ -321,7 +317,6 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
 
         const SizedBox(height: 32),
 
-        // 📦 METADATA CHIPS (MOVED ABOVE DESCRIPTION)
         Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -344,7 +339,6 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
         const Divider(),
         const SizedBox(height: 24),
 
-        // Description
         const Text(
           'Description',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -357,7 +351,6 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
 
         const SizedBox(height: 40),
 
-        // 🚀 ACTION BUTTON (ONLY FOR BORROWERS NOW)
         if (!isOwner)
           SizedBox(
             width: double.infinity,
@@ -380,7 +373,6 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
                     ),
             ),
           ),
-        // Add some bottom padding for the owner view so it doesn't look cut off
         if (isOwner) const SizedBox(height: 20),
       ],
     );

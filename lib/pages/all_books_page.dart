@@ -24,7 +24,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
   final _transactionService = TransactionService();
   final _userService = UserService();
 
-  // State
   List<Book> _allBooks = []; 
   List<Book> _filteredBooks = []; 
   AppUser? _currentUser;
@@ -32,7 +31,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
   bool _isLoading = true;
   String _currentUserId = '';
 
-  // Search Controller
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -75,7 +73,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
     }
   }
 
-  // 🔍 SEARCH LOGIC
   void _onSearchChanged(String query) {
     final lowerQuery = query.toLowerCase().trim();
 
@@ -94,7 +91,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
     });
   }
 
-  // 🤝 BORROW LOGIC
   void requestBorrow(Book book) async {
     if (book.ownerId == _currentUserId) return;
 
@@ -144,7 +140,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🏷️ HEADER
           Text(
             'Explore Library',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -160,7 +155,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
           
           const SizedBox(height: 32),
 
-          // 🔎 SEARCH BAR
           TextField(
             controller: _searchController,
             onChanged: _onSearchChanged,
@@ -183,7 +177,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
 
           const SizedBox(height: 32),
 
-          // 📚 GRID CONTENT
           if (_filteredBooks.isEmpty)
             _buildEmptyState()
           else
@@ -238,7 +231,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
     return Card(
       elevation: 2,
       clipBehavior: Clip.antiAlias,
-      // 2. Added InkWell to make the whole card clickable
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -251,7 +243,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 🖼️ IMAGE
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -279,7 +270,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
               ),
             ),
             
-            // ℹ️ DETAILS
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(
@@ -314,7 +304,6 @@ class _AllBooksPageState extends State<AllBooksPage> {
                   ),
                   const SizedBox(height: 12),
                   
-                  // 🔘 ACTION BUTTON
                   SizedBox(
                     width: double.infinity,
                     child: isMe

@@ -2,7 +2,7 @@ class AppUser {
   final String id;
   final String name;
   final String email;
-  final String role; // user | admin
+  final String role;
   final double rating;
   final int favors;
   final String bio;

@@ -57,7 +57,8 @@ class _MyBooksPageState extends State<MyBooksPage> {
       builder: (_) => AlertDialog(
         title: const Text('Delete book'),
         content: const Text(
-            'Are you sure you want to delete this book? This cannot be undone.'),
+          'Are you sure you want to delete this book? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -74,7 +75,7 @@ class _MyBooksPageState extends State<MyBooksPage> {
 
     if (confirmed != true) return;
 
-    // Show loading indicator during deletion if desired, 
+    // Show loading indicator during deletion if desired,
     // but for now we'll just process it.
     try {
       // 1. Delete images from Storage
@@ -98,9 +99,9 @@ class _MyBooksPageState extends State<MyBooksPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting book: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting book: $e')));
       }
     }
   }
@@ -127,31 +128,35 @@ class _MyBooksPageState extends State<MyBooksPage> {
                   Text(
                     'My Bookshelf',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Manage the books you are sharing with the community',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                        ),
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
                   ),
                 ],
               ),
               // "Add Book" Button visible on Desktop
               if (MediaQuery.of(context).size.width > 600)
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AddBookPage()),
-                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AddBookPage()),
+                    ).then((_) {
+                      _loadData();
+                    });
+                  },
                   icon: const Icon(Icons.add),
                   label: const Text('Add New Book'),
                 ),
             ],
           ),
-          
+
           const SizedBox(height: 32),
 
           // 📚 BOOK GRID or EMPTY STATE
@@ -163,7 +168,7 @@ class _MyBooksPageState extends State<MyBooksPage> {
                   itemCount: books.length,
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 220, // Responsive: cards max 220px wide
-                    childAspectRatio: 0.65,  // Maintain book ratio
+                    childAspectRatio: 0.65, // Maintain book ratio
                     crossAxisSpacing: 24,
                     mainAxisSpacing: 24,
                   ),
@@ -216,10 +221,10 @@ class _MyBooksPageState extends State<MyBooksPage> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-             onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AddBookPage()),
-              ),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddBookPage()),
+            ),
             child: const Text('Add Your First Book'),
           ),
         ],

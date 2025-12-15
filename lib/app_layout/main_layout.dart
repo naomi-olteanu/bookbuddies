@@ -36,17 +36,13 @@ class MainLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
-    // ❌ REMOVED: final GlobalKey<ScaffoldState> scaffoldKey... (This was the bug)
-
     return Scaffold(
-      // ❌ REMOVED: key: scaffoldKey
       drawer: !isDesktop && user != null ? _buildMobileDrawer(context) : null,
       appBar: isDesktop
           ? null
           : AppBar(
               leading: !isDesktop && user != null
                   ? Builder(
-                      // ✅ ADDED: Builder allows us to access Scaffold.of(context)
                       builder: (context) => IconButton(
                         icon: const Icon(Icons.menu),
                         onPressed: () => Scaffold.of(context).openDrawer(),
@@ -133,8 +129,7 @@ class MainLayout extends StatelessWidget {
           ),
 
           const SizedBox(width: 40),
-
-          // Navigation Links
+          
           _navButton(
             context,
             'My Books',

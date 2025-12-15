@@ -23,10 +23,10 @@ class _HomePageState extends State<HomePage> {
   final _auth = AuthService();
   final _userService = UserService();
   final _bookService = BookService();
-  
+
   AppUser? user;
   List<Book> recentBooks = [];
-  List<AppUser> topUsers = []; 
+  List<AppUser> topUsers = [];
   bool isLoading = true;
 
   @override
@@ -36,43 +36,47 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadData() async {
-  final currentUser = _auth.currentUser;
-  if (currentUser == null) return;
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
 
-  // 1. Fetch Current User
-  final u = await _userService.getUser(currentUser.uid);
-  
-  // 2. Fetch Books
-  final books = await _bookService.getAllAvailableBooks();
+    // 1. Fetch Current User
+    final u = await _userService.getUser(currentUser.uid);
 
-  // 3. Fetch ALL Users for the leaderboard
-  final userSnapshot = await FirebaseFirestore.instance.collection('users').get();
-  final allUsers = userSnapshot.docs.map((d) => AppUser.fromMap(d.id, d.data())).toList();
+    // 2. Fetch Books
+    final books = await _bookService.getAllAvailableBooks();
 
-  // 4. Sort Users (Same logic as Community Page)
-  // Score = (Rating * 10) + (Favors * 2)
-  allUsers.sort((a, b) {
-    final scoreA = (a.rating * 10) + (a.favors * 2);
-    final scoreB = (b.rating * 10) + (b.favors * 2);
-    return scoreB.compareTo(scoreA); // Descending order
-  });
+    // 3. Fetch ALL Users for the leaderboard
+    final userSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .get();
+    final allUsers = userSnapshot.docs
+        .map((d) => AppUser.fromMap(d.id, d.data()))
+        .toList();
 
-  if (mounted) {
-    setState(() {
-      user = u;
-      recentBooks = books.take(5).toList();
-      topUsers = allUsers.take(5).toList(); // Take the top 5 sorted users
-      isLoading = false;
+    // 4. Sort Users (Same logic as Community Page)
+    // Score = (Rating * 10) + (Favors * 2)
+    allUsers.sort((a, b) {
+      final scoreA = (a.rating * 10) + (a.favors * 2);
+      final scoreB = (b.rating * 10) + (b.favors * 2);
+      return scoreB.compareTo(scoreA); // Descending order
     });
+
+    if (mounted) {
+      setState(() {
+        user = u;
+        recentBooks = books.take(5).toList();
+        topUsers = allUsers.take(5).toList(); // Take the top 5 sorted users
+        isLoading = false;
+      });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
     if (isLoading || user == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    
+
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return MainLayout(
@@ -87,14 +91,14 @@ class _HomePageState extends State<HomePage> {
           _buildUsersCarousel(context),
           const SizedBox(height: 60),
           _buildCallToAction(context, isDesktop),
-          const SizedBox(height: 40), 
+          const SizedBox(height: 40),
         ],
       ),
     );
   }
 
   Widget _buildHeroSection(BuildContext context, bool isDesktop) {
-      final textSection = Column(
+    final textSection = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -112,7 +116,10 @@ class _HomePageState extends State<HomePage> {
         ),
         const SizedBox(height: 32),
         ElevatedButton.icon(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllBooksPage())),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AllBooksPage()),
+          ),
           icon: const Icon(Icons.search),
           label: const Text('Start Browsing'),
           style: ElevatedButton.styleFrom(
@@ -134,9 +141,14 @@ class _HomePageState extends State<HomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-           _heroStat('Rating', user!.rating.toStringAsFixed(1), Icons.star),
-           Container(height: 50, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 24)),
-           _heroStat('Favors', user!.favors.toString(), Icons.handshake),
+          _heroStat('Rating', user!.rating.toStringAsFixed(1), Icons.star),
+          Container(
+            height: 50,
+            width: 1,
+            color: Colors.white30,
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+          ),
+          _heroStat('Favors', user!.favors.toString(), Icons.handshake),
         ],
       ),
     );
@@ -160,8 +172,17 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       child: isDesktop
-          ? Row(children: [Expanded(child: textSection), const SizedBox(width: 40), statsSection])
-          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [textSection, const SizedBox(height: 32), statsSection]),
+          ? Row(
+              children: [
+                Expanded(child: textSection),
+                const SizedBox(width: 40),
+                statsSection,
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [textSection, const SizedBox(height: 32), statsSection],
+            ),
     );
   }
 
@@ -170,20 +191,35 @@ class _HomePageState extends State<HomePage> {
       children: [
         Icon(icon, color: Colors.white, size: 28),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
       ],
     );
   }
-  
+
   Widget _buildBooksCarousel(BuildContext context) {
     return WebCarousel<Book>(
       title: 'Trending Books',
       items: recentBooks,
-      onSeeAll: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllBooksPage())),
+      onSeeAll: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AllBooksPage()),
+      ),
       itemBuilder: (context, book) {
-        final imageUrl = book.userImages.isNotEmpty ? book.userImages.first : null;
-        
+        final imageUrl = book.userImages.isNotEmpty
+            ? book.userImages.first
+            : null;
+
         // ✅ MADE CLICKABLE
         return GestureDetector(
           onTap: () {
@@ -210,10 +246,21 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    child: imageUrl != null 
-                      ? Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity)
-                      : Container(color: Colors.grey[300], child: const Center(child: Icon(Icons.book, color: Colors.grey))),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
+                    child: imageUrl != null
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          )
+                        : Container(
+                            color: Colors.grey[300],
+                            child: const Center(
+                              child: Icon(Icons.book, color: Colors.grey),
+                            ),
+                          ),
                   ),
                 ),
                 Padding(
@@ -229,8 +276,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        book.authors.join(', '), 
-                        maxLines: 1, 
+                        book.authors.join(', '),
+                        maxLines: 1,
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
@@ -264,7 +311,10 @@ class _HomePageState extends State<HomePage> {
               CircleAvatar(
                 radius: 30,
                 backgroundColor: AppColors.secondary,
-                child: Text(userItem.name[0].toUpperCase(), style: const TextStyle(fontSize: 24, color: Colors.white)),
+                child: Text(
+                  userItem.name[0].toUpperCase(),
+                  style: const TextStyle(fontSize: 24, color: Colors.white),
+                ),
               ),
               const SizedBox(height: 12),
               Text(
@@ -277,7 +327,10 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.star, size: 14, color: Colors.amber),
-                  Text(' ${userItem.rating.toStringAsFixed(1)}', style: const TextStyle(fontSize: 12)),
+                  Text(
+                    ' ${userItem.rating.toStringAsFixed(1)}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 ],
               ),
             ],
@@ -304,7 +357,14 @@ class _HomePageState extends State<HomePage> {
     );
 
     final buttonContent = ElevatedButton(
-      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddBookPage())),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddBookPage()),
+        ).then((_) {
+          _loadData();
+        });
+      },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.secondary,
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
@@ -320,8 +380,20 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(24),
       ),
       child: isDesktop
-          ? Row(children: [Expanded(child: textContent), buttonContent])
-          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [textContent, const SizedBox(height: 24), buttonContent]),
+          ? Row(
+              children: [
+                Expanded(child: textContent),
+                buttonContent,
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                textContent,
+                const SizedBox(height: 24),
+                buttonContent,
+              ],
+            ),
     );
   }
 }
