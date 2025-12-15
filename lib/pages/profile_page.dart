@@ -1,4 +1,7 @@
 import 'package:bookbuddies/app_layout/main_layout.dart';
+import 'package:bookbuddies/pages/my_borrow_requests_page.dart'; // 1. Import
+import 'package:bookbuddies/pages/my_borrowed_books_page.dart';  // 2. Import
+import 'package:bookbuddies/pages/owner_requests_page.dart';     // 3. Import
 import 'package:bookbuddies/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
@@ -34,40 +37,35 @@ class _ProfilePageState extends State<ProfilePage> {
     if (uid == null) return;
 
     final u = await _userService.getUser(uid);
-    nameController.text = u.name;
-    bioController.text = u.bio;
-    if (mounted) {
-      setState(() {
-        user = u;
-        isLoading = false;
-      });
+    if (u != null) {
+      nameController.text = u.name;
+      bioController.text = u.bio;
+      if (mounted) {
+        setState(() {
+          user = u;
+          isLoading = false;
+        });
+      }
     }
-    }
+  }
 
   Future<void> save() async {
     if (user == null) return;
-
     setState(() => isSaving = true);
-
     try {
       await _userService.updateProfile(
         user!.id,
         nameController.text.trim(),
         bioController.text.trim(),
       );
-      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
         );
-        // Optional: Reload to ensure local state matches remote if needed
-        // loadUser(); 
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => isSaving = false);
@@ -89,17 +87,23 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 👤 HEADER SECTION
               _buildProfileHeader(context),
-              
               const SizedBox(height: 32),
-
-              // 📊 STATS SECTION (Rating & Favors)
               _buildStatsRow(context),
+              
+              const SizedBox(height: 40),
+              
+              // 🚀 NEW: DASHBOARD LINKS
+              const Text(
+                'My Activity',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _buildDashboardGrid(context),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
 
-              // 📝 EDIT FORM
+              // EDIT FORM
               Card(
                 elevation: 2,
                 child: Padding(
@@ -107,54 +111,24 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Personal Details',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                          if (user!.role == 'admin')
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.red.withOpacity(0.5)),
-                              ),
-                              child: const Text(
-                                'ADMIN',
-                                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12),
-                              ),
-                            ),
-                        ],
+                      const Text(
+                        'Edit Profile',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 24),
-                      
-                      // Read-only Email
-                      _buildReadOnlyField('Email Address', user!.email, Icons.email_outlined),
-                      const SizedBox(height: 20),
-
-                      // Editable Name
                       _buildTextField(
                         controller: nameController,
                         label: 'Full Name',
                         icon: Icons.person_outline,
                       ),
                       const SizedBox(height: 20),
-
-                      // Editable Bio
                       _buildTextField(
                         controller: bioController,
                         label: 'Bio',
                         icon: Icons.edit_note,
                         maxLines: 4,
-                        hint: 'Tell the community about your favorite books...',
                       ),
-
                       const SizedBox(height: 32),
-
-                      // Save Button
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -162,7 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           onPressed: isSaving ? null : save,
                           child: isSaving
                               ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text('Save Changes', style: TextStyle(fontSize: 16)),
+                              : const Text('Save Changes'),
                         ),
                       ),
                     ],
@@ -176,7 +150,88 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // 👤 HEADER WIDGET
+  // 🧩 NEW DASHBOARD GRID
+  Widget _buildDashboardGrid(BuildContext context) {
+    // Check screen width for responsiveness
+    final isDesktop = MediaQuery.of(context).size.width > 600;
+
+    final children = [
+      _buildActionCard(
+        context,
+        title: 'Sent Requests',
+        subtitle: 'Books you want',
+        icon: Icons.outbox,
+        color: Colors.orange,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyBorrowRequestsPage())),
+      ),
+      _buildActionCard(
+        context,
+        title: 'Active Loans',
+        subtitle: 'Books you have',
+        icon: Icons.menu_book,
+        color: Colors.blue,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyBorrowedBooksPage())),
+      ),
+      _buildActionCard(
+        context,
+        title: 'Incoming Requests',
+        subtitle: 'Approve loans',
+        icon: Icons.inbox,
+        color: Colors.green,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OwnerRequestsPage())),
+      ),
+    ];
+
+    if (isDesktop) {
+      return Row(
+        children: children.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: c))).toList(),
+      );
+    } else {
+      return Column(
+        children: children.map((c) => Padding(padding: const EdgeInsets.only(bottom: 12), child: c)).toList(),
+      );
+    }
+  }
+
+  Widget _buildActionCard(BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 32, color: color),
+              ),
+              const SizedBox(height: 12),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 4),
+              Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ... (Keep _buildProfileHeader, _buildStatsRow, _buildStatCard, _buildTextField from previous response)
+  // Ensure you paste the helper methods here so the file is complete.
+  
   Widget _buildProfileHeader(BuildContext context) {
     return Column(
       children: [
@@ -194,115 +249,51 @@ class _ProfilePageState extends State<ProfilePage> {
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
-        Text(
-          user!.role == 'admin' ? 'Administrator' : 'Community Member',
-          style: TextStyle(color: Colors.grey[600]),
-        ),
+        Text(user!.email, style: TextStyle(color: Colors.grey[600])),
       ],
     );
   }
 
-  // 📊 STATS ROW
   Widget _buildStatsRow(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.star,
-            value: user!.rating.toStringAsFixed(1),
-            label: 'Rating',
-            color: Colors.amber,
-          ),
-        ),
+        Expanded(child: _buildStatCard(Icons.star, user!.rating.toStringAsFixed(1), 'Rating', Colors.amber)),
         const SizedBox(width: 16),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.handshake,
-            value: user!.favors.toString(),
-            label: 'Favor Points',
-            color: AppColors.primary,
-          ),
-        ),
+        Expanded(child: _buildStatCard(Icons.handshake, user!.favors.toString(), 'Favors', AppColors.primary)),
       ],
     );
   }
 
-  Widget _buildStatCard(BuildContext context, {required IconData icon, required String value, required String label, required Color color}) {
+  Widget _buildStatCard(IconData icon, String value, String label, Color color) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
           Icon(icon, size: 32, color: color),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            label,
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-          ),
+          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
         ],
       ),
     );
   }
 
-  // 📝 TEXT FIELD HELPERS
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    int maxLines = 1,
-    String? hint,
-  }) {
+  Widget _buildTextField({required TextEditingController controller, required String label, required IconData icon, int maxLines = 1}) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
-        hintText: hint,
-        alignLabelWithHint: maxLines > 1,
-        prefixIcon: Padding(
-          padding: EdgeInsets.only(bottom: maxLines > 1 ? 60 : 0), // Align icon to top for textarea
-          child: Icon(icon, color: Colors.grey),
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
-        ),
-        filled: true,
-        fillColor: Theme.of(context).scaffoldBackgroundColor,
-      ),
-    );
-  }
-
-  Widget _buildReadOnlyField(String label, String value, IconData icon) {
-    return TextField(
-      readOnly: true,
-      controller: TextEditingController(text: value),
-      decoration: InputDecoration(
-        labelText: label,
         prefixIcon: Icon(icon, color: Colors.grey),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: Colors.grey.withOpacity(0.1), // Greyed out
+        fillColor: Theme.of(context).scaffoldBackgroundColor,
       ),
-      style: TextStyle(color: Colors.grey[700]),
     );
   }
 }

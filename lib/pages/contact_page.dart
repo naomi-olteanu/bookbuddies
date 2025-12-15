@@ -1,4 +1,8 @@
 import 'package:bookbuddies/app_layout/main_layout.dart';
+import 'package:bookbuddies/models/user_model.dart';
+import 'package:bookbuddies/services/auth_service.dart';
+import 'package:bookbuddies/services/user_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class ContactPage extends StatefulWidget {
@@ -9,23 +13,57 @@ class ContactPage extends StatefulWidget {
 }
 
 class _ContactPageState extends State<ContactPage> {
+  // Services
+  final _auth = AuthService();
+  final _userService = UserService();
+
+  // Controllers
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _messageController = TextEditingController();
-  bool _isLoading = false;
+  
+  // State
+  AppUser? _currentUser;
+  bool _isLoading = true;
+  bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  // 1. Fetch User to make AppBar consistent
+  Future<void> _loadUser() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid != null) {
+      final user = await _userService.getUser(uid);
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+          _isLoading = false;
+          
+          // Auto-fill form if user is found
+          if (user != null) {
+            _nameController.text = user.name;
+            _emailController.text = user.email;
+          }
+        });
+      }
+    } else {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   void _sendMessage() async {
-    // Simulate sending logic
     if (_nameController.text.isEmpty || _messageController.text.isEmpty) return;
 
-    setState(() => _isLoading = true);
+    setState(() => _isSending = true);
     await Future.delayed(const Duration(seconds: 1)); // Mock delay
     
     if (mounted) {
       setState(() {
-        _isLoading = false;
-        _nameController.clear();
-        _emailController.clear();
+        _isSending = false;
         _messageController.clear();
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -36,16 +74,21 @@ class _ContactPageState extends State<ContactPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return MainLayout(
       title: 'Contact Us',
+      user: _currentUser, // ✅ PASS USER HERE
       child: Column(
         children: [
           // 🌿 HEADER
           Text(
             'Get in Touch',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: Theme.of(context).primaryColor,
             ),
@@ -54,33 +97,34 @@ class _ContactPageState extends State<ContactPage> {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
             child: Text(
-              'Have a question about the app? Found a bug? Or just want to say hi? We\'d love to hear from you.',
+              'Have a question about a book swap? Found a bug? Or just want to say hi? We\'d love to hear from you.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).textTheme.bodySmall?.color,
-                fontSize: 18,
+                fontSize: 16,
               ),
             ),
           ),
           const SizedBox(height: 60),
 
           // 📐 RESPONSIVE CONTENT
-          isDesktop 
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _buildContactInfo(context)),
-                  const SizedBox(width: 60),
-                  Expanded(flex: 2, child: _buildContactForm(context)),
-                ],
-              )
-            : Column(
-                children: [
-                  _buildContactInfo(context),
-                  const SizedBox(height: 40),
-                  _buildContactForm(context),
-                ],
-              ),
+          if (isDesktop) 
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildContactInfo(context)),
+                const SizedBox(width: 60),
+                Expanded(flex: 2, child: _buildContactForm(context)),
+              ],
+            )
+          else 
+            Column(
+              children: [
+                _buildContactInfo(context),
+                const SizedBox(height: 40),
+                _buildContactForm(context),
+              ],
+            ),
         ],
       ),
     );
@@ -92,9 +136,9 @@ class _ContactPageState extends State<ContactPage> {
       children: [
         _infoRow(context, Icons.email_outlined, 'Email Us', 'support@bookbuddies.com'),
         const SizedBox(height: 32),
-        _infoRow(context, Icons.location_on_outlined, 'Visit Us', 'Calea Victoriei\nBucuresti, Sector 1'),
+        _infoRow(context, Icons.location_on_outlined, 'Visit Us', '123 Reading Lane\nBooktown, BK 90210'),
         const SizedBox(height: 32),
-        _infoRow(context, Icons.access_time, 'Working Hours', 'Mon - Fri: 9:00 - 16:00'),
+        _infoRow(context, Icons.access_time, 'Working Hours', 'Mon - Fri: 9am - 5pm'),
       ],
     );
   }
@@ -163,8 +207,8 @@ class _ContactPageState extends State<ContactPage> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _isLoading ? null : _sendMessage,
-                child: _isLoading 
+                onPressed: _isSending ? null : _sendMessage,
+                child: _isSending 
                   ? const CircularProgressIndicator(color: Colors.white) 
                   : const Text('Send Message', style: TextStyle(fontSize: 16)),
               ),

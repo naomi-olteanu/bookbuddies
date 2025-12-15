@@ -6,10 +6,11 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../pages/all_books_page.dart';
 import '../pages/my_books_page.dart';
-import '../pages/contact_page.dart'; 
+import '../pages/contact_page.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_controller.dart';
+import '../pages/owner_requests_page.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget child;
@@ -34,7 +35,7 @@ class MainLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 900;
-    
+
     // ❌ REMOVED: final GlobalKey<ScaffoldState> scaffoldKey... (This was the bug)
 
     return Scaffold(
@@ -44,17 +45,15 @@ class MainLayout extends StatelessWidget {
           ? null
           : AppBar(
               leading: !isDesktop && user != null
-                  ? Builder( // ✅ ADDED: Builder allows us to access Scaffold.of(context)
+                  ? Builder(
+                      // ✅ ADDED: Builder allows us to access Scaffold.of(context)
                       builder: (context) => IconButton(
                         icon: const Icon(Icons.menu),
                         onPressed: () => Scaffold.of(context).openDrawer(),
                       ),
                     )
                   : null,
-              title: InkWell(
-                onTap: () => _goHome(context),
-                child: Text(title),
-              ),
+              title: InkWell(onTap: () => _goHome(context), child: Text(title)),
               actions: _buildMobileActions(context),
             ),
       body: Column(
@@ -67,7 +66,10 @@ class MainLayout extends StatelessWidget {
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1200),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 32,
+                      ),
                       child: child,
                     ),
                   ),
@@ -95,9 +97,10 @@ class MainLayout extends StatelessWidget {
         border: Border(bottom: BorderSide(color: Colors.grey.withOpacity(0.1))),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2))
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
@@ -110,7 +113,11 @@ class MainLayout extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.auto_stories, color: AppColors.primary, size: 28),
+                  const Icon(
+                    Icons.auto_stories,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'BookBuddies',
@@ -124,14 +131,42 @@ class MainLayout extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const SizedBox(width: 40),
 
           // Navigation Links
-          _navButton(context, 'My Books', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyBooksPage()))),
-          _navButton(context, 'Browse', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllBooksPage()))),
-          _navButton(context, 'Community', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityPage()))),
-          _navButton(context, 'Contact', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage()))),
+          _navButton(
+            context,
+            'My Books',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyBooksPage()),
+            ),
+          ),
+          _navButton(
+            context,
+            'Browse',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AllBooksPage()),
+            ),
+          ),
+          _navButton(
+            context,
+            'Community',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CommunityPage()),
+            ),
+          ),
+          _navButton(
+            context,
+            'Contact',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ContactPage()),
+            ),
+          ),
 
           const Spacer(),
 
@@ -140,7 +175,9 @@ class MainLayout extends StatelessWidget {
             valueListenable: ThemeController.themeMode,
             builder: (context, mode, _) {
               return IconButton(
-                icon: Icon(mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
+                icon: Icon(
+                  mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
+                ),
                 onPressed: ThemeController.toggleTheme,
               );
             },
@@ -148,27 +185,32 @@ class MainLayout extends StatelessWidget {
           const SizedBox(width: 16),
           if (user != null) ...[
             InkWell(
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const ProfilePage())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              ),
               child: CircleAvatar(
                 backgroundColor: AppColors.primary,
-                child: Text(user!.name[0].toUpperCase(),
-                    style: const TextStyle(color: Colors.white)),
+                child: Text(
+                  user!.name[0].toUpperCase(),
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
             ),
             const SizedBox(width: 8),
             IconButton(
-                onPressed: AuthService().logout,
-                icon: const Icon(Icons.logout),
-                tooltip: 'Logout'),
-          ]
+              onPressed: AuthService().logout,
+              icon: const Icon(Icons.logout),
+              tooltip: 'Logout',
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildMobileDrawer(BuildContext context) {
-      return Drawer(
+    return Drawer(
       child: Column(
         children: [
           UserAccountsDrawerHeader(
@@ -177,23 +219,43 @@ class MainLayout extends StatelessWidget {
             accountEmail: Text(user!.email),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
-              child: Text(user!.name[0].toUpperCase(), style: const TextStyle(fontSize: 24, color: AppColors.primary)),
+              child: Text(
+                user!.name[0].toUpperCase(),
+                style: const TextStyle(fontSize: 24, color: AppColors.primary),
+              ),
             ),
           ),
           ListTile(
             leading: const Icon(Icons.menu_book),
             title: const Text('My Books'),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyBooksPage())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyBooksPage()),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.search),
             title: const Text('Browse Books'),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllBooksPage())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AllBooksPage()),
+            ),
           ),
-           ListTile(
+          ListTile(
+            leading: const Icon(Icons.inbox),
+            title: const Text('Inbox (Requests)'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const OwnerRequestsPage()),
+            ),
+          ),
+          ListTile(
             leading: const Icon(Icons.mail),
             title: const Text('Contact Us'),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage())),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ContactPage()),
+            ),
           ),
           const Divider(),
           ListTile(
@@ -212,7 +274,9 @@ class MainLayout extends StatelessWidget {
         valueListenable: ThemeController.themeMode,
         builder: (context, mode, _) {
           return IconButton(
-            icon: Icon(mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
+            icon: Icon(
+              mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
+            ),
             onPressed: ThemeController.toggleTheme,
           );
         },
@@ -231,8 +295,8 @@ class MainLayout extends StatelessWidget {
           label,
           style: TextStyle(
             color: textColor,
-            fontSize: 15, 
-            fontWeight: FontWeight.w600
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
