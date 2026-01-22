@@ -1,4 +1,5 @@
 import 'package:bookbuddies/pages/community_page.dart';
+import 'package:bookbuddies/pages/forum_posts_page.dart';
 import 'package:bookbuddies/pages/home_page.dart';
 import 'package:bookbuddies/pages/profile_page.dart';
 import 'package:bookbuddies/widgets/web_footer.dart';
@@ -152,6 +153,14 @@ class MainLayout extends StatelessWidget {
             () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const CommunityPage()),
+            ),
+          ),
+          _navButton(
+            context,
+            'Book Clubs',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ForumPostsPage()),
             ),
           ),
           _navButton(

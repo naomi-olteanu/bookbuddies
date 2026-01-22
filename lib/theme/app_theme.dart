@@ -6,11 +6,11 @@ class AppColors {
   static const Color primary = Color(0xFF386641);     // Deep Fern Green (Solid, readable)
   static const Color secondary = Color(0xFFA3B18A);   // Sage
   
-  // CHANGED: Darker beige background, softer card
+  // Backgrounds
   static const Color background = Color(0xFFEBE9E1);  // "Old Paper" / Warm Sand
   static const Color card = Color(0xFFFDFBF7);        // "Rice Paper" (Not harsh white)
   
-  // CHANGED: Warmer brown
+  // Accent
   static const Color accent = Color(0xFFBC6C25);      // Earthy Bronze / Tiger Lily
 
   // Text
@@ -20,15 +20,15 @@ class AppColors {
 
 /// 🌙 Forest Reading — Dark Mode Colors
 class AppDarkColors {
-  // CHANGED: Lighter, brighter primary for contrast against dark
+  // Brighter primary for contrast
   static const Color primary = Color(0xFF81B29A);     // Soft Eucalyptus
   static const Color secondary = Color(0xFF588157);   // Muted Green
   
-  // CHANGED: Moved away from "Black" to "Deep Slate Green"
+  // Deep Slate Backgrounds
   static const Color background = Color(0xFF262B2B);  // Deep Twilight Slate
   static const Color card = Color(0xFF353E3C);        // Elevated Slate Green
   
-  // CHANGED: Golden/Amber accent for night mode visibility
+  // Golden/Amber accent
   static const Color accent = Color(0xFFDDA15E);      // Muted Gold / Buff
 
   static const Color textPrimary = Color(0xFFEAE0D5); // Almond / Bone White
@@ -46,13 +46,13 @@ class AppTheme {
       seedColor: AppColors.primary,
       primary: AppColors.primary,
       secondary: AppColors.accent,
-      surface: AppColors.card, // Updated to match card
+      surface: AppColors.card,
       onSurface: AppColors.textPrimary,
       brightness: Brightness.light,
     ),
 
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.background, // Blends with background for a cleaner look
+      backgroundColor: AppColors.background,
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
       iconTheme: IconThemeData(color: AppColors.primary),
@@ -61,40 +61,48 @@ class AppTheme {
     textTheme: const TextTheme(
       headlineLarge: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
       titleMedium: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-      bodyMedium: TextStyle(
-        color: AppColors.textPrimary,
-        fontSize: 16,
-      ),
-      bodySmall: TextStyle(
-        color: AppColors.textMuted,
-      ),
+      bodyMedium: TextStyle(color: AppColors.textPrimary, fontSize: 16),
+      bodySmall: TextStyle(color: AppColors.textMuted),
     ),
 
     cardTheme: CardThemeData(
       color: AppColors.card,
-      elevation: 0, // Flat design
-      // Add a subtle border to distinguish from the beige background
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: const BorderRadius.all(Radius.circular(16)),
         side: BorderSide(color: AppColors.primary.withOpacity(0.05), width: 1),
       ),
     ),
 
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary, // Green buttons
-        foregroundColor: Colors.white,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.card,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppColors.primary.withOpacity(0.1)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppColors.primary.withOpacity(0.1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
     ),
 
-    iconTheme: const IconThemeData(
-      color: AppColors.primary,
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     ),
+
+    iconTheme: const IconThemeData(color: AppColors.primary),
   );
 
   /// 🌙 DARK THEME
@@ -122,38 +130,46 @@ class AppTheme {
     textTheme: const TextTheme(
       headlineLarge: TextStyle(color: AppDarkColors.primary, fontWeight: FontWeight.bold),
       titleMedium: TextStyle(color: AppDarkColors.textPrimary, fontWeight: FontWeight.w600),
-      bodyMedium: TextStyle(
-        color: AppDarkColors.textPrimary,
-        fontSize: 16,
-      ),
-      bodySmall: TextStyle(
-        color: AppDarkColors.textMuted,
+      bodyMedium: TextStyle(color: AppDarkColors.textPrimary, fontSize: 16),
+      bodySmall: TextStyle(color: AppDarkColors.textMuted),
+    ),
+
+    cardTheme: const CardThemeData(
+      color: AppDarkColors.card,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),
 
-    cardTheme: CardThemeData(
-      color: AppDarkColors.card,
-      elevation: 0,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-        // No border needed in dark mode usually, but optional
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppDarkColors.card,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppDarkColors.primary.withOpacity(0.1)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppDarkColors.primary.withOpacity(0.1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppDarkColors.primary, width: 1.5),
       ),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppDarkColors.primary, // Soft Eucalyptus buttons
-        foregroundColor: AppDarkColors.background, // Dark text on light button
+        backgroundColor: AppDarkColors.primary,
+        foregroundColor: AppDarkColors.background,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
 
-    iconTheme: const IconThemeData(
-      color: AppDarkColors.primary,
-    ),
+    iconTheme: const IconThemeData(color: AppDarkColors.primary),
   );
 }

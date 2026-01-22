@@ -72,4 +72,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'bookbuddies-2025.firebasestorage.app',
     iosBundleId: 'com.example.bookbuddies',
   );
+
 }
