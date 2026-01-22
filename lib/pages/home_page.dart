@@ -359,7 +359,7 @@ class _HomePageState extends State<HomePage> {
       onPressed: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AddBookPage()),
+          MaterialPageRoute(builder: (_) => AddBookPage(currentUser: user!)),
         ).then((_) {
           _loadData();
         });

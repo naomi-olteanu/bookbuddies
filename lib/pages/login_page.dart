@@ -102,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 24),
 
                       SizedBox(
-                        height: 48,
+                        height: 28,
                         child: ElevatedButton(
                           onPressed: isLoading ? null : login,
                           child: isLoading 

@@ -25,6 +25,12 @@ class _CreateForumPostPageState extends State<CreateForumPostPage> {
   bool _isSubmitting = false;
 
   Future<void> _submit() async {
+    if (widget.currentUser.isBlocked) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Your account is blocked')),
+    );
+    return;
+  }
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
     setState(() => _isSubmitting = true);

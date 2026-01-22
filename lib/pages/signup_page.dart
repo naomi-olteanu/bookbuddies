@@ -50,6 +50,7 @@ class _SignupPageState extends State<SignupPage> {
         profilePicture: '',
         ratingSum: 5,
         ratingCount: 1,
+        isBlocked: false,
       );
 
       await _userService.createUser(user);

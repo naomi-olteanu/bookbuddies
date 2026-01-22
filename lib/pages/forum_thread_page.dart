@@ -28,6 +28,12 @@ class _ForumThreadPageState extends State<ForumThreadPage> {
   }
 
   Future<void> _sendMessage() async {
+    if (widget.currentUser.isBlocked) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Your account is blocked')),
+    );
+    return;
+  }
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 

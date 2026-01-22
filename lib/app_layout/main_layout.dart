@@ -12,6 +12,8 @@ import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_controller.dart';
 import '../pages/owner_requests_page.dart';
+// Ensure this import exists for your Admin Dashboard
+import '../pages/admin_dashboard_page.dart'; 
 
 class MainLayout extends StatelessWidget {
   final Widget child;
@@ -157,12 +159,22 @@ class MainLayout extends StatelessWidget {
           ),
           _navButton(
             context,
-            'Book Clubs',
+            'Forums',
             () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ForumPostsPage()),
             ),
           ),
+          // Added Admin Dashboard button for Desktop
+          if (user?.role == 'admin')
+            _navButton(
+              context,
+              'Admin',
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+              ),
+            ),
           _navButton(
             context,
             'Contact',
@@ -174,7 +186,20 @@ class MainLayout extends StatelessWidget {
 
           const Spacer(),
 
-          // Right Side Actions
+          // Book Requests Page for Desktop (Inbox)
+          if (user != null)
+            IconButton(
+              icon: const Icon(Icons.inbox),
+              tooltip: 'Book Requests',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OwnerRequestsPage()),
+              ),
+            ),
+          
+          const SizedBox(width: 8),
+
+          // Theme Toggle
           ValueListenableBuilder<ThemeMode>(
             valueListenable: ThemeController.themeMode,
             builder: (context, mode, _) {
@@ -229,6 +254,19 @@ class MainLayout extends StatelessWidget {
               ),
             ),
           ),
+          // Added Admin Dashboard for Mobile
+          if (user?.role == 'admin')
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings, color: AppColors.primary),
+              title: const Text('Admin Dashboard'),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+                );
+              },
+            ),
           ListTile(
             leading: const Icon(Icons.menu_book),
             title: const Text('My Books'),
@@ -251,6 +289,22 @@ class MainLayout extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const OwnerRequestsPage()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.people),
+            title: const Text('Community'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CommunityPage()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.forum),
+            title: const Text('Forums'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ForumPostsPage()),
             ),
           ),
           ListTile(

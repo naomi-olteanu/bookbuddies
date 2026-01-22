@@ -136,7 +136,7 @@ class _MyBooksPageState extends State<MyBooksPage> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const AddBookPage()),
+                      MaterialPageRoute(builder: (_) => AddBookPage(currentUser: currentUser!)),
                     ).then((_) {
                       _loadData();
                     });
@@ -211,7 +211,7 @@ class _MyBooksPageState extends State<MyBooksPage> {
           ElevatedButton(
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AddBookPage()),
+              MaterialPageRoute(builder: (_) => AddBookPage(currentUser: currentUser!)),
             ),
             child: const Text('Add Your First Book'),
           ),

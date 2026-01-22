@@ -7,13 +7,19 @@ import 'package:bookbuddies/services/google_books_service.dart';
 import '../services/auth_service.dart';
 import '../services/book_service.dart';
 import '../models/book_model.dart';
+import '../models/user_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class AddBookPage extends StatefulWidget {
   final Book? bookToEdit;
+  final AppUser currentUser;
 
-  const AddBookPage({super.key, this.bookToEdit});
+  const AddBookPage({
+    super.key,
+    this.bookToEdit,
+    required this.currentUser,
+  });
 
   @override
   State<AddBookPage> createState() => _AddBookPageState();
@@ -37,7 +43,7 @@ class _AddBookPageState extends State<AddBookPage> {
   GoogleBookResult? selectedGoogleBook;
   bool manualMode = false;
   BookCondition selectedCondition = BookCondition.GOOD;
-  
+
   // Images
   final ImagePicker _picker = ImagePicker();
   List<XFile> newImages = [];
@@ -50,11 +56,13 @@ class _AddBookPageState extends State<AddBookPage> {
     final b = widget.bookToEdit;
 
     titleController = TextEditingController(text: b?.title ?? '');
-    authorsController = TextEditingController(text: b?.authors.join(', ') ?? '');
-    descriptionController = TextEditingController(text: b?.description ?? '');
+    authorsController =
+        TextEditingController(text: b?.authors.join(', ') ?? '');
+    descriptionController =
+        TextEditingController(text: b?.description ?? '');
     languageController = TextEditingController(text: b?.language ?? 'en');
     editionController = TextEditingController(text: b?.edition ?? '');
-    
+
     if (b != null) {
       selectedCondition = b.condition;
       existingImages = List.from(b.userImages);
@@ -74,6 +82,13 @@ class _AddBookPageState extends State<AddBookPage> {
   }
 
   Future<void> saveBook() async {
+    if (widget.currentUser.isBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your account is blocked')),
+      );
+      return;
+    }
+
     if (titleController.text.isEmpty ||
         authorsController.text.isEmpty ||
         descriptionController.text.isEmpty) {
@@ -101,12 +116,11 @@ class _AddBookPageState extends State<AddBookPage> {
           .toList();
 
       final bookId = widget.bookToEdit?.id ?? '';
-      
       List<String> finalImageUrls = [...existingImages];
 
       if (widget.bookToEdit != null) {
-         final newUrls = await uploadImages(bookId);
-         finalImageUrls.addAll(newUrls);
+        final newUrls = await uploadImages(bookId);
+        finalImageUrls.addAll(newUrls);
       }
 
       final bookData = Book(
@@ -114,10 +128,16 @@ class _AddBookPageState extends State<AddBookPage> {
         title: titleController.text.trim(),
         authors: authors,
         description: descriptionController.text.trim(),
-        categories: selectedGoogleBook?.categories ?? widget.bookToEdit?.categories ?? [],
+        categories:
+            selectedGoogleBook?.categories ??
+                widget.bookToEdit?.categories ??
+                [],
         isbn: widget.bookToEdit?.isbn,
-        googleBookId: selectedGoogleBook?.id ?? widget.bookToEdit?.googleBookId,
-        googleCoverUrl: selectedGoogleBook?.thumbnail ?? widget.bookToEdit?.googleCoverUrl,
+        googleBookId:
+            selectedGoogleBook?.id ?? widget.bookToEdit?.googleBookId,
+        googleCoverUrl:
+            selectedGoogleBook?.thumbnail ??
+                widget.bookToEdit?.googleCoverUrl,
         language: languageController.text.trim(),
         edition: editionController.text.trim(),
         condition: selectedCondition,
@@ -137,9 +157,15 @@ class _AddBookPageState extends State<AddBookPage> {
 
       if (!mounted) return;
       Navigator.pop(context);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(widget.bookToEdit != null ? 'Changes saved!' : 'Book published!')),
+        SnackBar(
+          content: Text(
+            widget.bookToEdit != null
+                ? 'Changes saved!'
+                : 'Book published!',
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -154,10 +180,10 @@ class _AddBookPageState extends State<AddBookPage> {
   Future<void> pickImages() async {
     final totalImages = existingImages.length + newImages.length;
     if (totalImages >= 5) return;
-    
+
     final images = await _picker.pickMultiImage();
     if (images.isEmpty) return;
-    
+
     setState(() {
       final remaining = 5 - totalImages;
       newImages.addAll(images.take(remaining));
@@ -172,9 +198,10 @@ class _AddBookPageState extends State<AddBookPage> {
       try {
         final image = newImages[i];
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final ref = storage.ref('books/$bookId/photo_${timestamp}_$i.jpg');
-        
-        final data = await image.readAsBytes(); 
+        final ref =
+            storage.ref('books/$bookId/photo_${timestamp}_$i.jpg');
+
+        final data = await image.readAsBytes();
         await ref.putData(data);
         final url = await ref.getDownloadURL();
         urls.add(url);
@@ -198,17 +225,18 @@ class _AddBookPageState extends State<AddBookPage> {
           Text(
             isEditing ? 'Edit Listing' : 'List a Book',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
           ),
           const SizedBox(height: 8),
           Text(
-            isEditing ? 'Update details or add more photos.' : 'Share your library with the world.',
+            isEditing
+                ? 'Update details or add more photos.'
+                : 'Share your library with the world.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 32),
-
           if (isDesktop)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,

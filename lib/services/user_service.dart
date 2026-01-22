@@ -14,6 +14,13 @@ class UserService {
     return AppUser.fromMap(doc.id, doc.data() as Map<String, dynamic>);
   }
 
+  Future<List<AppUser>> getAllUsers() async {
+    final snapshot = await users.get();
+    return snapshot.docs
+        .map((doc) => AppUser.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<void> updateProfile(String uid, String name, String bio) async {
     await users.doc(uid).update({
       'name': name,
@@ -60,6 +67,11 @@ Future<void> addUserRating(String userId, int newRating) async {
   });
 }
 
+  Future<void> updateUser(String userId, Map<String, dynamic> updates) async {
+    await users.doc(userId).update(updates);
+  }
 
-
+  Future<void> deleteUser(String userId) async {
+    await users.doc(userId).delete();
+  }
 }

@@ -9,6 +9,7 @@ class AppUser {
   final String profilePicture;
   final int ratingSum;
   final int ratingCount;
+  final bool isBlocked;
 
   AppUser({
     required this.id,
@@ -21,6 +22,7 @@ class AppUser {
     required this.profilePicture,
     required this.ratingSum,
     required this.ratingCount,
+    required this.isBlocked,
   });
 
   factory AppUser.fromMap(String id, Map<String, dynamic> data) {
@@ -35,6 +37,7 @@ class AppUser {
       profilePicture: data['profilePicture'] ?? '',
       ratingSum: data['ratingSum'] ?? 0,
       ratingCount: data['ratingCount'] ?? 0,
+      isBlocked: data['isBlocked'] ?? false,
     );
   }
 
@@ -49,6 +52,7 @@ class AppUser {
       'profilePicture': profilePicture,
       'ratingSum': ratingSum,
       'ratingCount': ratingCount,
+      'isBlocked': isBlocked,
     };
   }
 }

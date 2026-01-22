@@ -264,6 +264,7 @@ class _MyBookDetailsPageState extends State<MyBookDetailsPage> {
                     MaterialPageRoute(
                       builder: (_) => AddBookPage(
                         bookToEdit: widget.book,
+                        currentUser: _currentUser!,
                       ), // 🆕 Pass the book!
                     ),
                   ).then((_) {
