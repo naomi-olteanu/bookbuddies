@@ -157,7 +157,7 @@ class _MyBooksPageState extends State<MyBooksPage> {
                   itemCount: books.length,
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 220,
-                    childAspectRatio: 0.65,
+                    childAspectRatio: 0.60,
                     crossAxisSpacing: 24,
                     mainAxisSpacing: 24,
                   ),

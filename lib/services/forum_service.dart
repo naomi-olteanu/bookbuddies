@@ -5,13 +5,10 @@ class ForumService {
   final CollectionReference forumPosts =
       FirebaseFirestore.instance.collection('forum_posts');
 
-  // CREATE --------------------------------------------------
 
   Future<DocumentReference> addForumPost(ForumPost post) async {
     return forumPosts.add(post.toMap());
   }
-
-  // ONE FORUM PER BOOK PER USER CHECK ----------------------
 
   Future<bool> userCanCreateForumForBook({
     required String userId,
@@ -25,8 +22,6 @@ class ForumService {
 
     return snapshot.docs.isEmpty;
   }
-
-  // READ ----------------------------------------------------
 
   Future<List<ForumPost>> getAllForums() async {
     final snapshot = await forumPosts
@@ -79,8 +74,6 @@ class ForumService {
     );
   }
 
-  // UPDATE --------------------------------------------------
-
   Future<void> updateForumPost({
     required String postId,
     required String title,
@@ -100,8 +93,6 @@ class ForumService {
     });
   }
 
-  // DELETE --------------------------------------------------
-
   Future<void> deleteForum(String postId) async {
     final doc = forumPosts.doc(postId);
     final snapshot = await doc.get();
@@ -109,8 +100,6 @@ class ForumService {
       await doc.delete();
     }
   }
-
-  // MESSAGE METADATA ---------------------------------------
 
   Future<void> updateAfterNewMessage(String postId) async {
     await forumPosts.doc(postId).update({

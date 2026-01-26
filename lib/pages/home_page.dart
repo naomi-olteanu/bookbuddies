@@ -219,7 +219,6 @@ class _HomePageState extends State<HomePage> {
             ? book.userImages.first
             : null;
 
-        // ✅ MADE CLICKABLE
         return GestureDetector(
           onTap: () {
             Navigator.push(

@@ -9,8 +9,6 @@ class ForumMessageService {
         .collection('messages');
   }
 
-  // READ --------------------------------------------------
-
   Future<List<ForumMessage>> getMessages(String postId) async {
     final snapshot = await _messagesRef(postId)
         .orderBy('createdAt')
@@ -25,8 +23,6 @@ class ForumMessageService {
         )
         .toList();
   }
-
-  // CREATE ------------------------------------------------
 
   Future<void> sendMessage({
     required String postId,
@@ -47,8 +43,6 @@ class ForumMessageService {
       });
     });
   }
-
-  // DELETE ------------------------------------------------
 
   Future<void> deleteMessage({
     required String postId,

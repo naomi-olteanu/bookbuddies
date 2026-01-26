@@ -1,6 +1,8 @@
 import 'package:bookbuddies/pages/community_page.dart';
 import 'package:bookbuddies/pages/forum_posts_page.dart';
 import 'package:bookbuddies/pages/home_page.dart';
+import 'package:bookbuddies/pages/my_borrow_requests_page.dart';
+import 'package:bookbuddies/pages/my_borrowed_books_page.dart';
 import 'package:bookbuddies/pages/profile_page.dart';
 import 'package:bookbuddies/widgets/web_footer.dart';
 import 'package:flutter/material.dart';
@@ -143,6 +145,22 @@ class MainLayout extends StatelessWidget {
           ),
           _navButton(
             context,
+            'My Requests',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyBorrowRequestsPage()),
+            ),
+          ),
+          _navButton(
+            context,
+            'My Borrowed Books',
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyBorrowedBooksPage()),
+            ),
+          ),
+          _navButton(
+            context,
             'Browse',
             () => Navigator.push(
               context,
@@ -273,6 +291,22 @@ class MainLayout extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const MyBooksPage()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.outbox),
+            title: const Text('My Requests'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyBorrowRequestsPage()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.outbox),
+            title: const Text('My Borrowed Books'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyBorrowedBooksPage()),
             ),
           ),
           ListTile(

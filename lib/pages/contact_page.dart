@@ -125,15 +125,21 @@ class _ContactPageState extends State<ContactPage> {
   }
 
   Widget _buildContactInfo(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _infoRow(context, Icons.email_outlined, 'Email Us', 'support@bookbuddies.com'),
-        const SizedBox(height: 32),
-        _infoRow(context, Icons.location_on_outlined, 'Visit Us', 'Calea Victoriei\nBucuresti, Sector 1'),
-        const SizedBox(height: 32),
-        _infoRow(context, Icons.access_time, 'Working Hours', 'Mon - Fri: 9am - 5pm'),
-      ],
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _infoRow(context, Icons.email_outlined, 'Email Us', 'support@bookbuddies.com'),
+            const SizedBox(height: 32),
+            _infoRow(context, Icons.location_on_outlined, 'Visit Us', 'Calea Victoriei\nBucuresti, Sector 1'),
+            const SizedBox(height: 32),
+            _infoRow(context, Icons.access_time, 'Working Hours', 'Mon - Fri: 9am - 5pm'),
+          ],
+        ),
+      ),
     );
   }
 
